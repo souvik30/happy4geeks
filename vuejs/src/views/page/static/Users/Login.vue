@@ -20,7 +20,7 @@
                         <p class="subtitle">Login</p>
                         <div class="content">
                             <p class="has-text-dark has-text-weight-semibold">Login to this Website to Continue.</p>
-                            <p class="has-text-dark">You are Just a Page from Experiencing the Glory.</p>
+                            <p class="has-text-dark">You are Just a Page from Experiencing the Happiness.</p>
                             <button class="button mb-3" @click="hyInput = !hyInput">
                               <span class="icon">
                                 <i class="fas fa-dolly"></i>

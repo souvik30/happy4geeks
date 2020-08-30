@@ -11,7 +11,7 @@ import router from "./router";
 import vSelect from 'vue-select';
 import EventBus from "./EventBus";
 import Crypto from "crypto-js";
-import secret from "../secret";
+
 import i18n from "./i18n";
 import VuePlyr from "vue-plyr"
 import store from "@/store/index";
@@ -25,7 +25,7 @@ import "@/assets/style/theme/register.scss";
 
 Vue.prototype.$hash = Crypto;
 Vue.prototype.$saltIt = bcrypt;
-Vue.prototype.$pass = secret.pass;
+Vue.prototype.$pass = 'test';
 Vue.config.productionTip = false;
 Vue.prototype.$cdnpath = cdnpath;
 Vue.prototype.$bus = EventBus;

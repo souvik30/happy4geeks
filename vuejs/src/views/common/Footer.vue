@@ -7,17 +7,15 @@
       <div v-if="footerLogo" class="footpad footimage">
         <img width="150" height="75" class="gloryimage" :src="footerLogoLink">
       </div>
-      <div class="footpad footicons">
-        <a class="icon-tag" >Happy4Geeks</a>
-      </div>
+      
       <div v-if="copyright" class="footpad footer-copyright">
         Copyright&nbsp;<i class="fas fa-copyright"></i> {{ Date.now() | moment("YYYY") }} | &nbsp;{{ sitename }}
       </div>
       <div v-if="license" class="footpad footer-policy">
-        Licensed under FrontEnd - <a href="https://github.com/souvikmondal97/happy4geeks/blob/dark-mode-0-1/LICENSE" target="_blank"> GPL 3.0 </a> | Backend - <a href="https://github.com/souvikmondal97/happy4geeks/blob/dark-mode-0-1/vuejs/LICENSE" target="_blank">MIT</a>
+        Licensed under FrontEnd - <a href="" target="_blank"> GPL 3.0 </a> | Backend - <a href="" target="_blank">MIT</a>
       </div>
       <div v-if="codeofconduct" class="footpad footer-code">
-        Please Read our <a href="https://github.com/souvikmondal97/happy4geeks/blob/dark-mode-0-1/CODE_OF_CONDUCT.md" target="_blank">Code of Conduct</a> | <a href="https://raw.githubusercontent.com/souvikmondal97/happy4geeks/dark-mode-0-1/CONTRIBUTING.md" target="_blank">Community Guidelines</a>
+        Please Read our <a href="" target="_blank">Code of Conduct</a> | <a href="" target="_blank">Community Guidelines</a>
       </div>
     </div>
   </footer>

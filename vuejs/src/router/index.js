@@ -2,7 +2,7 @@ import Vue from "vue";
 import febAlive from "feb-alive";
 import VueRouter from "vue-router";
 import axios from "axios";
-import secret from "../../secret";
+
 import Crypto from "crypto-js";
 // Routing data
 
@@ -57,7 +57,7 @@ router.beforeEach( (to, from, next) => {
   }
   if(to.matched.some(record => record.meta.requiresAuth)) {
     if(hyBridToken && hyBridToken != null || hyBridToken != undefined) {
-      const hybridData = JSON.parse(Crypto.AES.decrypt(hyBridToken, secret.pass).toString(Crypto.enc.Utf8))
+      const hybridData = JSON.parse(Crypto.AES.decrypt(hyBridToken, 'test').toString(Crypto.enc.Utf8))
       if(hybridData.user){
         if(to.matched.some(record => record.meta.hybrid)){
           next();
@@ -69,8 +69,8 @@ router.beforeEach( (to, from, next) => {
         next({ name: 'results', params: { id: to.params.id, cmd: "results", nextUrl: to.fullPath, data: "Not Authorized" } });
       }
     } else if(token != null && user != null){
-      const tokenData = JSON.parse(Crypto.AES.decrypt(token, secret.pass).toString(Crypto.enc.Utf8));
-      const userData = JSON.parse(Crypto.AES.decrypt(user, secret.pass).toString(Crypto.enc.Utf8));
+      const tokenData = JSON.parse(Crypto.AES.decrypt(token, 'test').toString(Crypto.enc.Utf8));
+      const userData = JSON.parse(Crypto.AES.decrypt(user, 'test').toString(Crypto.enc.Utf8));
       if(sessionStore != undefined && sessionStore != null) {
         if(to.matched.some(record => record.meta.admin)){
           if(userData.admin){
@@ -139,8 +139,8 @@ router.beforeEach( (to, from, next) => {
           next();
       }
       else{
-        const tokenData = JSON.parse(Crypto.AES.decrypt(token, secret.pass).toString(Crypto.enc.Utf8));
-        const userData = JSON.parse(Crypto.AES.decrypt(user, secret.pass).toString(Crypto.enc.Utf8));
+        const tokenData = JSON.parse(Crypto.AES.decrypt(token, 'test').toString(Crypto.enc.Utf8));
+        const userData = JSON.parse(Crypto.AES.decrypt(user, 'test').toString(Crypto.enc.Utf8));
         if(to.matched.some(record => record.meta.allow)){
             next({ params: { userinfo: userData, tokeninfo: tokenData } });
         } else {

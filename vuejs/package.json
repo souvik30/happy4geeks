@@ -1,7 +1,7 @@
 {
   "name": "happy4geeks",
-  "version": "7.8.7",
-  "g2index": "7.8.7",
+  "version": "5.1.2",
+  "g2index": "5.1.2",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
