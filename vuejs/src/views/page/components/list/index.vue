@@ -30,16 +30,9 @@
           "
           :title="file.name"
         >
-          <svg class="iconfont" aria-hidden="true">
-            <use @click.self="
-              action(
-                file,
-                file.mimeType !== 'application/vnd.google-apps.folder'
-                  ? 'view'
-                  : ''
-              )
-            " :xlink:href="icons(file.mimeType)" />
-          </svg>
+        <svg class="iconfont" aria-hidden="true">
+          <use :xlink:href="icons(file.mimeType)" />
+        </svg>
           {{ file.name }}
           <span
             class="g2-file-desc"
@@ -74,34 +67,6 @@
               : ''
           )
         " class="td-item is-hidden-mobile is-hidden-touch">{{ file.size }}</td>
-        <td class="is-hidden-mobile is-hidden-touch">
-          <span style="color: #e50914;" class="icon" @click.stop="action(file,'copy')">
-            <i
-              class="fa fa-copy faa-shake animated-hover"
-              :title="$t('list.opt.copy')"
-              aria-hidden="true"
-            ></i>
-          </span>
-          <span style="color: #e50914;" class="icon" @click.stop="action(file, '_blank')">
-            <i
-              class="fa fa-external-link faa-shake animated-hover"
-              :title="$t('list.opt.newTab')"
-              aria-hidden="true"
-            ></i>
-          </span>
-          <span
-            style="color: #e50914;"
-            class="icon"
-            @click.stop="action(file, 'down')"
-            v-if="file.mimeType !== 'application/vnd.google-apps.folder'"
-          >
-            <i
-              class="fa fa-download faa-shake animated-hover"
-              aria-hidden="true"
-              :title="$t('list.opt.download')"
-            ></i>
-          </span>
-        </td>
       </tr>
     </tbody>
   </table>
@@ -132,11 +97,6 @@ export default {
         {
           name: this.$t("list.title.size"),
           style: "width:10.5%;color: white;",
-          class: "is-hidden-mobile is-hidden-touch",
-        },
-        {
-          name: this.$t("list.title.operation"),
-          style: "width:13.5%;color: white;",
           class: "is-hidden-mobile is-hidden-touch",
         },
       ];

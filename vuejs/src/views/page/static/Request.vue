@@ -120,16 +120,30 @@
     </div>
 </template>
 <script>
+import { getgds } from "@utils/localUtils";
 import Loading from 'vue-loading-overlay';
 import 'vue-loading-overlay/dist/vue-loading.css';
     export default {
       components: {
         Loading,
       },
+      metaInfo() {
+        return {
+          title: this.metatitle,
+          titleTemplate: (titleChunk) => {
+            if(titleChunk && this.siteName){
+              return titleChunk ? `${titleChunk} | ${this.siteName}` : `${this.siteName}`;
+            } else {
+              return "Loading..."
+            }
+          },
+        }
+      },
         props : ["nextUrl"],
         data(){
             return {
                 name : "",
+                metatitle: "Request Access",
                 email : "",
                 emailFocus: "",
                 nameFocus: "",
@@ -151,6 +165,7 @@ import 'vue-loading-overlay/dist/vue-loading.css';
         },
         methods : {
             handleSubmit(e) {
+              this.metatitle = "Requesting Access..."
               this.loading = true;
                 e.preventDefault()
                 if(this.checked){
@@ -168,11 +183,13 @@ import 'vue-loading-overlay/dist/vue-loading.css';
                             this.successmessageVisibility = true;
                             this.errormessageVisibility = false;
                             this.loading = false;
+                            this.metatitle = "Success Requesting...";
                             this.resultmessage = response.data.message
                           } else {
                             this.successmessageVisibility = false;
                             this.errormessageVisibility = true;
                             this.loading = false;
+                            this.metatitle = "Request Failed...";
                             this.resultmessage = response.data.message
                           }
                         }
@@ -184,6 +201,7 @@ import 'vue-loading-overlay/dist/vue-loading.css';
                     this.successmessageVisibility = false;
                     this.errormessageVisibility = true;
                     this.loading = false;
+                    this.metatitle = "Request Failed...";
                     this.resultmessage = "> You Need to Accept Code of Conduct."
                     this.checked = false;
                   }
@@ -191,6 +209,7 @@ import 'vue-loading-overlay/dist/vue-loading.css';
                   this.successmessageVisibility = false;
                   this.errormessageVisibility = true;
                   this.loading = false;
+                  this.metatitle = "Request Failed...";
                   this.resultmessage = "> You Need to Accept Community Guidelines."
                   this.checked = false;
                 }
@@ -215,22 +234,36 @@ import 'vue-loading-overlay/dist/vue-loading.css';
               }
             }
         },
+        computed: {
+          siteName() {
+            return window.gds.filter((item, index) => {
+              return index == this.$route.params.id;
+            })[0];
+          },
+        },
+        beforeMount(){
+          this.loading = true;
+          this.$http.post(window.apiRoutes.getSiteSettings).then(response => {
+            if(response.data.auth && response.data.registered){
+              if(response.data.data.requests){
+                this.loading = false;
+              } else {
+                this.loading = false;
+                this.$router.push({ name: 'results', params: {id: this.currgd.id, cmd: 'result', success: false, data: "User Requests are Closed by the Admin. Please Try Afterwards or Contact Admins.", noredirect: true} })
+              }
+            } else {
+              this.loading = false;
+            }
+          })
+        },
         mounted() {
+          if(this.$audio.player() != undefined) this.$audio.destroy();
           this.checkParams();
         },
         created() {
-          if (window.gds && window.gds.length > 0) {
-            this.gds = window.gds.map((item, index) => {
-              return {
-                name: item,
-                id: index,
-              };
-            });
-            let index = this.$route.params.id;
-            if (this.gds && this.gds.length >= index) {
-              this.currgd = this.gds[index];
-            }
-          }
+          let gddata = getgds(this.$route.params.id);
+          this.gds = gddata.gds;
+          this.currgd = gddata.current;
         },
         watch: {
           name: "validateData",

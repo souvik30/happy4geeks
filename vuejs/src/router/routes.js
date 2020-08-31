@@ -94,6 +94,17 @@ const frameIn = [{
     }
   },
   {
+    path: "/:id(\\d)::cmd(others)/:path",
+    name: 'otherFiles',
+    component: _import("page/GoOthers"),
+    meta: {
+      ...meta,
+      view: 'list',
+      requiresAuth: true,
+      hybrid: true,
+    }
+  },
+  {
       path: '/:id(\\d)::cmd(login)/',
       name: 'login',
       component: _import("page/static/Users/Login"),
@@ -202,6 +213,17 @@ const frameIn = [{
       path: '/:id(\\d)::cmd(admin)/manage',
       name: 'manageUsers',
       component: _import("page/static/Admin/ManageUsers"),
+      meta: {
+          ...meta,
+          requiresAuth: true,
+          admin: true,
+          hybrid: false,
+      }
+  },
+  {
+      path: '/:id(\\d)::cmd(admin)/settings',
+      name: 'sitesettings',
+      component: _import("page/static/Admin/SiteSettings"),
       meta: {
           ...meta,
           requiresAuth: true,

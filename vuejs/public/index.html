@@ -19,11 +19,11 @@
   <script>
     var authConfig = {
       version: '1.1.0',
-      hybridpass: "",
+      hybridpass: "$2b$10$VuQSSgZ130dr8e7o3rUqS.5Hxl1lPxgN.v9JsqGLh30/4i0u5bCua",
       roots: [
         {
           id: "",
-          name: "Happy4Geeks",
+          name: "Happy 4 Geeks",
           pass: "",
         },
         {
@@ -43,6 +43,10 @@
       netflix_home: true, //If True Dont Forget to Fill in all the Required Details
       prefer_netflix_black: false,
       loading_image: "https://i.ibb.co/bsqHW2w/Lamplight-Mobile.gif", // Max Width and Height - 250px. Do not Enter Images more than 250px wide.
+      home_background_image: "https://assets.nflxext.com/ffe/siteui/vlv3/bd777948-0e8f-4f7f-b0bf-f7e0ee0875e5/cd5b9c59-183b-4b03-9caf-934bc11565b8/IN-en-20200627-popsignuptwoweeks-perspective_alpha_website_small.jpg",
+      audio: {
+        default_poster: "https://i.ibb.co/Hx3ZqLm/giphy.gif",
+      },
       footer_data: {
         copyright: true,
         disclaimer: true,
@@ -53,9 +57,9 @@
       },
       render: {
         head_md: true,
-        head_md_link: `https://cdn.jsdelivr.net/gh/souvikmondal97/happy4geeks@v1.0/vuejs/dist/HEAD.md`,
+        head_md_link: `https://cdn.jsdelivr.net/gh/souvikmondal97/happy4geeks@v6.1.1/vuejs/dist/HEAD.md`,
         readme_md: true,
-        readme_md_link: "https://cdn.jsdelivr.net/gh/souvikmondal97/happy4geeks@v1.0/vuejs/dist/README.md",
+        readme_md_link: "https://cdn.jsdelivr.net/gh/souvikmondal97/happy4geeks@v6.1.1/vuejs/dist/README.md",
         desc: true,
       }
     }
@@ -206,6 +210,7 @@
       inviteAdmin: 'http://localhost:3000/invite/admin',
       inviteSuperAdmin: 'http://localhost:3000/invite/superadmin',
       addSpamUser: 'http://localhost:3000/spam/user',
+      quickaddSpam: 'http://localhost:3000/spam/quickadd',
       addSpamAdmin: 'http://localhost:3000/spam/admin',
       addSpamSuperAdmin: 'http://localhost:3000/spam/superadmin',
       removeSpamUser: 'http://localhost:3000/spam/remove/user',
@@ -217,10 +222,15 @@
       deleteUser: 'http://localhost:3000/delete/user',
       deleteMe: 'http://localhost:3000/user/delete',
       deleteAdmin: 'http://localhost:3000/delete/admin',
+      mediaTokenTransmitter: 'http://localhost:3000/user/media/transmit',
+      mediaTokenVerify: 'http://localhost:3000/user/media/verify',
       getUsers: 'http://localhost:3000/get/users',
+      forgotPass: 'http://localhost:3000/user/forgotpass',
       getAll: 'http://localhost:3000/get/all',
       getAdmins: 'http://localhost:3000/get/admins',
-      getSuperAdmins: 'http://localhost:3000/get/superadmins'
+      getSuperAdmins: 'http://localhost:3000/get/superadmins',
+      setSiteSettings: 'http://localhost:3000/user/sitesettings',
+      getSiteSettings: 'http://localhost:3000/get/sitesettings'
     }
     window.gdconfig = JSON.parse(JSON.stringify({ version: authConfig.version, themeOptions: themeOptions }));
     window.apiRoutes = routes;

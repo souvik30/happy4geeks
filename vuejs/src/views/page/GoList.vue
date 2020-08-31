@@ -40,24 +40,6 @@
     ></div>
     <headmd :option="headmd" v-if="renderHeadMD && headmd.display"></headmd>
     <readmemd :option="readmemd" v-if="renderReadMeMD && readmemd.display"></readmemd>
-
-    <viewer
-      v-if="viewer && images && images.length > 0"
-      :images="images"
-      class="is-hidden"
-      ref="viewer"
-      :options="{ toolbar: true, url: 'data-source' }"
-      @inited="inited"
-    >
-      <img
-        v-for="image in images"
-        :src="thum(image.thumbnailLink)"
-        :data-source="image.path"
-        :key="image.path"
-        :alt="image.name"
-        class="image"
-      />
-    </viewer>
   </div>
 </template>
 
@@ -67,8 +49,8 @@ import {
   formatFileSize,
   checkoutPath,
   checkView,
-  checkExtends,
 } from "@utils/AcrouUtil";
+import { getgds, icon } from "@utils/localUtils";
 import { mapState } from "vuex";
 import BreadCrumb from "../common/BreadCrumb";
 import ListView from "./components/list";
@@ -85,55 +67,44 @@ export default {
     Readmemd: Markdown,
     InfiniteLoading,
   },
+  metaInfo() {
+    return {
+      title: this.metatitle,
+      titleTemplate: (titleChunk) => {
+        if(titleChunk && this.siteName){
+          return titleChunk ? `${titleChunk} | ${this.siteName}` : `${this.siteName}`;
+        } else {
+          return "Loading..."
+        }
+      },
+    }
+  },
   data: function() {
     return {
+      metatitle: "",
       infiniteId: +new Date(),
       loading: true,
+      windowWidth: window.innerWidth,
+      screenWidth: screen.width,
+      ismobile: false,
       loadImage: "",
+      currentLocation: "",
+      gds: [],
+      currgd: {},
       page: {
         page_token: null,
         page_index: 0,
       },
       files: [],
-      viewer: false,
       readmeLink: "",
       headLink: "",
-      icon: {
-        "application/vnd.google-apps.folder": "icon-morenwenjianjia",
-        "video/mp4": "icon-mp",
-        "audio/mpeg": "icon-mkv",
-        "audio/ogg": "icon-mkv",
-        "audio/aac": "icon-mkv",
-        "audio/vnd.wav": "icon-mkv",
-        "video/x-matroska": "icon-mkv",
-        "video/x-msvideo": "icon-avi",
-        "video/webm": "icon-webm",
-        "text/plain": "icon-txt",
-        "text/markdown": "icon-markdown",
-        "text/x-ssa": "icon-ASS",
-        "text/html": "icon-html",
-        "text/x-python-script": "icon-python",
-        "text/x-java": "icon-java1",
-        "text/x-sh": "icon-SH",
-        "application/x-subrip": "icon-srt",
-        "application/zip": "icon-zip",
-        "application/x-zip-compressed": "icon-zip",
-        "application/rar": "icon-rar",
-        "application/pdf": "icon-pdf",
-        "application/json": "icon-JSON1",
-        "application/x-yaml": "icon-YML",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-          "icon-word",
-        "image/bmp": "icon-img",
-        "image/jpeg": "icon-img",
-        "image/png": "icon-img",
-        "image/gif": "icon-img"
-      },
       headmd: { display: false, file: {}, path: "" },
       readmemd: { display: false, file: {}, path: "" },
     };
   },
   mounted() {
+    this.metatitle = "Getting Files..."
+    this.checkMobile();
     if(window.themeOptions.loading_image){
       this.loadImage = window.themeOptions.loading_image;
     } else {
@@ -157,13 +128,10 @@ export default {
         (file) => file.mimeType.indexOf("image") != -1
       );
     },
-    ismobile() {
-      var width = window.innerWidth > 0 ? window.innerWidth : screen.width;
-      if(width > 966){
-        return false
-      } else {
-        return true
-      }
+    siteName() {
+      return window.gds.filter((item, index) => {
+        return index == this.$route.params.id;
+      })[0];
     },
     renderHeadMD() {
       return window.themeOptions.render.head_md || false;
@@ -174,6 +142,9 @@ export default {
   },
   created() {
     this.render();
+    let gddata = getgds(this.$route.params.id);
+    this.gds = gddata.gds;
+    this.currgd = gddata.current;
   },
   methods: {
     infiniteHandler($state) {
@@ -186,6 +157,7 @@ export default {
       console.log($state)
     },
     render($state) {
+      this.metatitle = "Getting Files..."
       this.headmd = { display: false, file: "", path: "" };
       this.readmemd = { display: false, file: "", path: "" };
       var path = this.$route.path;
@@ -234,6 +206,8 @@ export default {
         });
     },
     buildFiles(files) {
+      let lastName = decodeURIComponent(this.$route.fullPath.split("/").slice(0,-1).join("/").split("/").pop());
+      this.metatitle = lastName.slice(lastName.length-1, lastName.length) == ":" ? "Root" : lastName;
       var path = this.$route.path;
       return !files
         ? []
@@ -285,21 +259,18 @@ export default {
           });
         });
     },
+    checkMobile() {
+      var width = this.windowWidth > 0 ? this.windowWidth : this.screenWidth;
+      if(width > 966){
+        this.ismobile = false
+      } else {
+        this.ismobile = true
+      }
+    },
     thum(url) {
       return url ? `/${this.$route.params.id}:view?url=${url}` : "";
     },
-    inited(viewer) {
-      this.$viewer = viewer;
-    },
     action(file, target) {
-      if (file.mimeType.indexOf("image") != -1) {
-        this.viewer = true;
-        this.$nextTick(() => {
-          let index = this.images.findIndex((item) => item.path === file.path);
-          this.$viewer.view(index);
-        });
-        return;
-      }
       let cmd = this.$route.params.cmd;
       if (cmd && cmd === "search") {
         this.goSearchResult(file, target);
@@ -309,18 +280,6 @@ export default {
     },
     target(file, target) {
       let path = file.path;
-      if (target === "_blank") {
-        window.open(path);
-        return;
-      }
-      if (target === "copy") {
-        this.copy(path);
-        return;
-      }
-      if (target === "down" || (!checkExtends(path) && !file.isFolder)) {
-        location.href = path.replace(/^\/(\d+:)\//, "/$1down/");
-        return;
-      }
       if (target === "view") {
         this.$router.push({
           path: checkView(path),
@@ -374,8 +333,26 @@ export default {
         });
     },
     getIcon(type) {
-      return "#" + (this.icon[type] ? this.icon[type] : "icon-weizhi");
+      return "#" + (icon[type] ? icon[type] : "icon-weizhi");
     },
   },
+  watch: {
+    screenWidth: function() {
+      var width = this.windowWidth > 0 ? this.windowWidth : this.screenWidth;
+      if(width > 966){
+        this.ismobile = false
+      } else {
+        this.ismobile = true
+      }
+    },
+    windowWidth: function() {
+      var width = this.windowWidth > 0 ? this.windowWidth : this.screenWidth;
+      if(width > 966){
+        this.ismobile = false
+      } else {
+        this.ismobile = true
+      }
+    },
+  }
 };
 </script>

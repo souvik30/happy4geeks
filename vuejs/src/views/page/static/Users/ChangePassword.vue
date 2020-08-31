@@ -55,11 +55,25 @@
     </div>
 </template>
 <script>
+import { initializeUser, getgds } from "@utils/localUtils";
+import { removeItem } from "@utils/encryptUtils";
 import Loading from 'vue-loading-overlay';
 import 'vue-loading-overlay/dist/vue-loading.css';
     export default {
       components: {
         Loading,
+      },
+      metaInfo() {
+        return {
+          title: this.metatitle,
+          titleTemplate: (titleChunk) => {
+            if(titleChunk && this.siteName){
+              return titleChunk ? `${titleChunk} | ${this.siteName}` : `${this.siteName}`;
+            } else {
+              return "Loading..."
+            }
+          },
+        }
       },
         data(){
             return {
@@ -68,6 +82,7 @@ import 'vue-loading-overlay/dist/vue-loading.css';
                 newpassword : "",
                 confirmpassword: "",
                 gds: [],
+                metatitle: "Change Password",
                 currgd: {},
                 errorMessage: false,
                 disabled: true,
@@ -78,6 +93,7 @@ import 'vue-loading-overlay/dist/vue-loading.css';
         },
         methods : {
             handleSubmit(e){
+              this.metatitle = "Checking & Changing"
                 this.loading = true;
                 e.preventDefault();
                 if (this.confirmpassword === this.newpassword && this.newpassword.length > 0) {
@@ -88,19 +104,22 @@ import 'vue-loading-overlay/dist/vue-loading.css';
                     })
                     .then(response => {
                       if(response.data.auth && response.data.registered && response.data.changed){
-                        localStorage.removeItem("tokendata");
-                        localStorage.removeItem("userdata");
+                        removeItem("tokendata");
+                        removeItem("userdata");
                         this.loading = false;
+                        this.metatitle = "Success...";
                         this.$bus.$emit("logout", "User Logged Out");
                         this.$router.push({ name: 'results', params: { id: this.currgd.id, cmd: "result", success: true, redirectUrl: '/', tocmd: 'login', data: `response.data.message. You have to Relogin with new Password` } })
                       } else {
                         this.errorMessage = true
                         this.loading = false;
+                        this.metatitle = "Failed...";
                         this.resultmessage = response.data.message;
                       }
                     });
                 } else {
                   this.loading = false;
+                  this.metatitle = "Failed...";
                   this.resultmessage = "Passwords Do Not Match"
                   this.newpassword = "";
                   this.confirmpassword = "";
@@ -122,34 +141,33 @@ import 'vue-loading-overlay/dist/vue-loading.css';
             } else {
               return true
             }
-          }
+          },
+          siteName() {
+            return window.gds.filter((item, index) => {
+              return index == this.$route.params.id;
+            })[0];
+          },
         },
         beforeMount() {
+          if(this.$audio.player() != undefined) this.$audio.destroy();
           this.loading = true;
-          var user = localStorage.getItem("userdata");
-          var token = localStorage.getItem("tokendata");
-          if(user && token){
-            var userData = JSON.parse(this.$hash.AES.decrypt(user, this.$pass).toString(this.$hash.enc.Utf8));
-            this.loading = false;
-            this.user = userData;
+          var userData = initializeUser();
+          if(userData.isThere){
+            if(userData.type == "hybrid"){
+              this.user = userData.data.user;
+              this.loading = userData.data.loading;
+            } else if(userData.type == "normal"){
+              this.user = userData.data.user;
+              this.loading = userData.data.loading;
+            }
           } else {
-            this.loading = false;
-            this.user = null;
+            this.loading = userData.data.loading;
           }
         },
         created() {
-          if (window.gds) {
-            this.gds = window.gds.map((item, index) => {
-              return {
-                name: item,
-                id: index,
-              };
-            });
-            let index = this.$route.params.id;
-            if (this.gds) {
-              this.currgd = this.gds[index];
-            }
-          }
+          let gddata = getgds(this.$route.params.id);
+          this.gds = gddata.gds;
+          this.currgd = gddata.current;
         },
         watch: {
           oldpassword: "validateData",

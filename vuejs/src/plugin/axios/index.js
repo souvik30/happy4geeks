@@ -33,7 +33,7 @@ service.interceptors.response.use(
     if (error && error.response) {
       switch (error.response.status) {
         case 401:
-          error.message = "You Don't Deserve this happiness!! 😝";
+          error.message = "You Don't Deserve this Happiness!! 😝";
           break;
         default:
           break;

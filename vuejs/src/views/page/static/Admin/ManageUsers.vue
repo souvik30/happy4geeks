@@ -181,13 +181,30 @@
   </div>
 </template>
 <script>
+import {
+  initializeUser,
+  getgds,
+} from "@utils/localUtils";
 import Loading from 'vue-loading-overlay';
 export default {
   components: {
     Loading,
   },
+  metaInfo() {
+    return {
+      title: this.metatitle,
+      titleTemplate: (titleChunk) => {
+        if(titleChunk && this.siteName){
+          return titleChunk ? `${titleChunk} | ${this.siteName}` : `${this.siteName}`;
+        } else {
+          return "Loading..."
+        }
+      },
+    }
+  },
   data(){
     return {
+      metatitle: "Manage Users",
       user: {},
       token: {},
       users: [],
@@ -218,6 +235,7 @@ export default {
   },
   methods: {
     handleRefresh() {
+      this.metatitle = "Refreshing...";
       this.loading = true;
       if(this.apiurl.length > 0){
         this.$http.post(this.apiurl, {
@@ -225,9 +243,11 @@ export default {
         }).then(response => {
           if(response.data.auth && response.data.registered){
             this.loading = false;
+            this.metatitle = "Success...";
             this.users = response.data.users;
             this.searchedUsers = response.data.users;
           } else {
+            this.metatitle = "Failed...";
             console.log(response);
           }
         })
@@ -241,6 +261,7 @@ export default {
       }
     },
     handleUpgradeDelete(user, action) {
+      this.metatitle = "Handling the Changes...";
       this.loading = true;
       let route = "";
       if(action == "delete"){
@@ -258,6 +279,7 @@ export default {
         if(action == "delete"){
           if(response.data.auth && response.data.registered && response.data.deleted){
             this.usermodal = false;
+            this.metatitle = "Done...";
             this.currentUser = {};
             this.errorMessage = false;
             this.successMessage = false;
@@ -269,6 +291,7 @@ export default {
           } else {
             this.loading = false;
             this.errorMessage = true
+            this.metatitle = "Failed...";
             this.successMessage = false;
             this.resultmessage = response.data.message;
           }
@@ -276,6 +299,7 @@ export default {
       })
     },
     handleInvite(user) {
+      this.metatitle = "Inviting...";
       this.loading = true;
       let route = "";
       if(user.role == "User"){
@@ -291,12 +315,14 @@ export default {
         }).then(response => {
           if(response.data.auth && response.data.registered){
             this.successMessage = true;
+            this.metatitle = "Invite Sent...";
             this.errorMessage = false;
             this.resultmessage = response.data.message;
             this.loading = false;
           } else {
             this.successMessage = false;
             this.errorMessage = true;
+            this.metatitle = "Invite Failed...";
             this.resultmessage = response.data.message;
             this.loading = false;
           }
@@ -310,6 +336,7 @@ export default {
       this.errorMessage = false;
       this.successMessage = false;
       this.currentUser = user;
+      this.metatitle = "Handling the Changes...";
       let route = "";
       if(user.role == "User"){
         route = window.apiRoutes.getPendingAdmins;
@@ -328,29 +355,35 @@ export default {
               response.data.users.forEach((pendingUser) => {
                 if(pendingUser.email == user.email){
                     this.loading = false;
+                    this.metatitle = "Done...";
                     this.currentUser.pending = true;
                 } else {
                   this.loading = false;
+                  this.metatitle = "Failed...";
                   this.currentUser.pending = false;
                 }
               });
             } else {
+              this.metatitle = "Failed...";
               this.loading = false;
               this.currentUser.pending = false
             }
           } else {
             this.loading = false;
+            this.metatitle = "Failed...";
             this.currentUser.pending = false
           }
         })
       } else {
         this.loading = false;
+        this.metatitle = "Failed...";
         this.currentUser.pending = false
       }
     },
     closeUserModal() {
       this.usermodal = false;
       this.currentUser = {};
+      this.metatitle = "Manage Users";
       this.errorMessage = false;
       this.successMessage = false;
       this.inviteInput = false;
@@ -360,40 +393,47 @@ export default {
   },
   beforeMount() {
     this.loading = true;
-    var token = localStorage.getItem("tokendata")
-    var user = localStorage.getItem("userdata");
-    if (user != null && token != null){
-      var tokenData = JSON.parse(this.$hash.AES.decrypt(token, this.$pass).toString(this.$hash.enc.Utf8));
-      var userData = JSON.parse(this.$hash.AES.decrypt(user, this.$pass).toString(this.$hash.enc.Utf8));
-      this.user = userData, this.token = tokenData, this.loading = false;
+    var userData = initializeUser();
+    if(userData.isThere){
+      if(userData.type == "hybrid"){
+        this.user = userData.data.user;
+        this.logged = userData.data.logged;
+        this.loading = userData.data.loading;
+      } else if(userData.type == "normal"){
+        this.user = userData.data.user;
+        this.token = userData.data.token;
+        this.logged = userData.data.logged;
+        this.loading = userData.data.loading;
+        this.admin = userData.data.admin;
+        this.superadmin = userData.data.superadmin;
+      }
     } else {
-      this.user = null, this.token = null, this.loading = false;
+      this.logged = userData.data.logged;
+      this.loading = userData.data.loading;
     }
   },
+  computed: {
+    siteName() {
+      return window.gds.filter((item, index) => {
+        return index == this.$route.params.id;
+      })[0];
+    },
+  },
   mounted() {
-    if(this.user.admin && this.user.superadmin){
-      this.admin = true, this.superadmin = true,this.loading = false;
+    if(this.admin && this.superadmin){
+      this.loading = false;
       this.apiurl = window.apiRoutes.getAll;
-    } else if(this.user.admin && !this.user.superadmin) {
-      this.admin = true, this.superadmin = false,this.loading = false;
+    } else if(this.admin && !this.superadmin) {
+      this.loading = false;
       this.apiurl = window.apiRoutes.getUsers;
     } else {
       this.$router.push({ name: 'results', params: { id: this.currgd.id, cmd: "result", data: "UnAuthorized Route.", redirectUrl: "/", tocmd: 'home' } })
     }
   },
   created() {
-    if (window.gds) {
-      this.gds = window.gds.map((item, index) => {
-        return {
-          name: item,
-          id: index,
-        };
-      });
-      let index = this.$route.params.id;
-      if (this.gds) {
-        this.currgd = this.gds[index];
-      }
-    }
+    let gddata = getgds(this.$route.params.id);
+    this.gds = gddata.gds;
+    this.currgd = gddata.current;
   },
   watch: {
     searchEmail: function(){

@@ -1,5 +1,5 @@
 <template>
-  <section :class="ismobile ? logged ? 'section mx-0 px-0' : 'section home-back mx-0 px-0' : logged ? 'section mx-0 px-0' : 'section home-back mx-0 px-0' ">
+  <section :class="ismobile ? logged ? 'section mx-0 px-0' : 'section mx-0 px-0' : logged ? 'section mx-0 px-0' : 'section mx-0 px-0' " :style="logged ? '' : 'min-width:100%;background-image: url('+backurl+');background-size:cover;min-width:100%;box-shadow:inset 0 0 0 2000px rgba(0, 0, 0, 0.5);' ">
     <nav v-if="!logged" class="navbar home-navbar">
       <div class="navbar-brand">
         <a class="navbar-item nav-heading">
@@ -26,37 +26,39 @@
           <loading :active.sync="loading" :can-cancel="false" :is-full-page="fullpage"></loading>
         </div>
          <div v-show="logged && netflix" class="columns is-desktop is-multiline is-centered is-vcentered mx-0 px-0">
-           <div v-for="(hero, index) in mainhero" v-bind:key="index" class="column is-full mx-0 px-0 mt-0 pt-0">
-             <section :class="ismobile ? 'hero is-fullheight mx-0 px-0' : 'hero is-large mx-0 px-0'" :style=" ismobile ? 'background: center;background-image: url('+hero.poster+');background-size:cover;min-width:100%;box-shadow:inset 0 0 0 2000px rgba(0, 0, 0, 0.2);' : 'background-image: url('+hero.poster+');background-size:cover;min-width:100%;box-shadow:inset 0 0 0 2000px rgba(0, 0, 0, 0.2);'">
-              <div class="hero-body">
-                <div class="container">
-                  <div class="columns is-mobile is-vcentered is-multiline">
-                    <div :class="ismobile ? 'column is-full' : 'column-is-half'">
-                      <h2 class="subtitle has-text-white">
-                        {{ hero.subtitle }}
-                      </h2>
-                      <h1 class="title main-home-hero-title has-text-white is-1">
-                        {{ hero.name }}
-                      </h1>
-                      <h3 class="subtitle has-text-white">
-                        Watch Here
-                      </h3>
-                      <button class="button is-dark" @click="gotoPage('/'+hero.link+'/')">
-                        <span class="icon">
-                          <i class="fas fa-play"></i>
-                        </span>
-                        <span>Play Now</span>
-                      </button>
+           <transition name="slide-fade" mode="out-in">
+             <div v-bind:key="mainKey" class="column is-full mx-0 px-0 mt-0 pt-0">
+               <section :class="ismobile ? 'hero is-fullheight mx-0 px-0' : 'hero is-large mx-0 px-0'" :style=" ismobile ? 'background: center;background-image: url('+mainhero.poster+');background-size:cover;min-width:100%;box-shadow:inset 0 0 0 2000px rgba(0, 0, 0, 0.2);' : 'background-image: url('+mainhero.poster+');background-size:cover;min-width:100%;box-shadow:inset 0 0 0 2000px rgba(0, 0, 0, 0.2);'">
+                <div class="hero-body">
+                  <div class="container">
+                    <div class="columns is-mobile is-vcentered is-multiline">
+                      <div :class="ismobile ? 'column is-full' : 'column-is-half'">
+                        <h2 class="subtitle has-text-white">
+                          {{ mainhero.subtitle }}
+                        </h2>
+                        <h1 class="title main-home-hero-title has-text-white is-1">
+                          {{ mainhero.name }}
+                        </h1>
+                        <h3 class="subtitle has-text-white">
+                          Watch Here
+                        </h3>
+                        <button class="button is-dark" @click="gotoPage('/'+mainhero.link+'/')">
+                          <span class="icon">
+                            <i class="fas fa-play"></i>
+                          </span>
+                          <span>Play Now</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </section>
-           </div>
+              </section>
+             </div>
+           </transition>
            <div :class=" ismobile ? 'column is-full mt-2 mr-0'  : 'column is-full ml-2 mr-0 pl-4 pr-0'">
              <div class="columns is-mobile">
                <div class="column is-half">
-                 <h2 class="subtitle has-text-netflix-only has-text-weight-bold">
+                 <h2 class="subtitle has-text-white has-text-weight-bold">
                    Top Trending
                  </h2>
                </div>
@@ -77,7 +79,7 @@
            <div :class=" ismobile ? 'column is-full mt-2 mr-0'  : 'column is-full ml-2 mr-0 pl-4 pr-0'">
              <div class="columns is-mobile">
                <div class="column is-half">
-                 <h2 class="subtitle has-text-netflix-only has-text-weight-bold">
+                 <h2 class="subtitle has-text-white has-text-weight-bold">
                    Categories
                  </h2>
                </div>
@@ -186,44 +188,36 @@
                       Get Started Now !
                     </h1>
                   </div>
-                  <div :class="ismobile ? 'column is-full'  : 'column is-full'">
-                    <button class="button is-warning" @click="gotoPage('/', 'login')">
-                      <span>Hybrid Login</span>
-                      <span class="icon">
-                        <i class="fas fa-arrow-right"></i>
-                      </span>
-                    </button>
-                  </div>
                 </div>
               </h1>
               <form @submit.prevent="verifyEmail">
                 <div class="columns is-multiline is-desktop is-centered is-vcentered">
                   <div class="column is-two-thirds">
                     <div class="columns is-multiline is-centered is-gapless is-vcentered">
-                      <div class="column has-text-right is-four-fifths">
-                        <div class="field">
-                          <p class="control">
-                            <input class="input special-email" autofocus placeholder="Enter Your Email" id="email" type="email" v-model="email" required>
-                          </p>
+                      <div class="column has-text-right is-full">
+                        <div class="field has-addons">
+                          <div class="control is-expanded">
+                            <input class="input is-large is-rounded" autofocus placeholder="Enter Your Email" id="email" type="email" v-model="email" required>
+                          </div>
+                          <div class="control">
+                            <button :class="ismobile ? loading ? 'button is-loading is-rounded is-netflix-red' : 'button is-rounded is-netflix-red' : loading ? 'button is-rounded is-loading is-large is-netflix-red' : 'button is-large is-rounded is-netflix-red'" :disabled="disabled">
+                              <span>Start</span>
+                              <span class="icon">
+                                <i class="fas fa-arrow-right"></i>
+                              </span>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <div :class="ismobile ? 'column has-text-centered mt-1 is-one-fifth' : 'column has-text-left is-one-fifth'">
-                        <button :class="ismobile ? loading ? 'button is-loading is-netflix-red' : 'button is-netflix-red' : loading ? 'button is-loading is-large is-netflix-red' : 'button is-large is-netflix-red'" :disabled="disabled">
-                          <span>Start</span>
-                          <span class="icon">
-                            <i class="fas fa-arrow-right"></i>
-                          </span>
-                        </button>
                       </div>
                     </div>
                   </div>
                   <div class="column mx-0 px-0 is-two-thirds">
-                    <p class="is-small has-text-grey subtitle has-text-centered">
+                    <p class="has-text-weight-normal has-text-white subtitle has-text-centered title is-6">
                       Enter Your Email to Login / Request / Register.
                     </p>
                   </div>
                   <div class="column is-full mb-0 mt-4 mx-0 px-0 has-text-centered">
-                    <p class="subtitle has-text-white subtitle has-text-centered">
+                    <p class="subtitle has-text-netflix-only has-text-weight-bold has-text-centered">
                       {{ Date.now() | moment("YYYY") }} | {{ currgd.name }}
                     </p>
                   </div>
@@ -237,11 +231,29 @@
   </section>
 </template>
 <script>
+import {
+  initializeUser,
+  getgds,
+  scrollTo,
+  shuffle
+} from "@utils/localUtils";
 import Loading from 'vue-loading-overlay';
 import 'vue-loading-overlay/dist/vue-loading.css';
     export default {
         components: {
           Loading,
+        },
+        metaInfo() {
+          return {
+            title: this.logged ? "Home" : "Welcome",
+            titleTemplate: (titleChunk) => {
+              if(titleChunk && this.siteName){
+                return titleChunk ? `${titleChunk} | ${this.siteName}` : `${this.siteName}`;
+              } else {
+                return "Loading..."
+              }
+            },
+          }
         },
         data () {
             return {
@@ -250,11 +262,14 @@ import 'vue-loading-overlay/dist/vue-loading.css';
                 gds: [],
                 netflix: true,
                 dialog: false,
+                backurl: "",
                 mainhero: {},
+                mainHeroArray: [],
                 trending: [],
                 category: [],
                 currgd: {},
                 email: "",
+                mainKey: 0,
                 heroCss:"",
                 disabled: true,
                 truncatedApi: "",
@@ -276,43 +291,27 @@ import 'vue-loading-overlay/dist/vue-loading.css';
           },
           assignUserInfo() {
             this.loading = true;
-            var token = localStorage.getItem("tokendata");
-            var user = localStorage.getItem("userdata");
-            var hyBridToken = localStorage.getItem("hybridToken");
-            if(hyBridToken && hyBridToken != null || hyBridToken != undefined){
-              const hybridData = JSON.parse(this.$hash.AES.decrypt(hyBridToken, this.$pass).toString(this.$hash.enc.Utf8))
-              if(hybridData.user){
-                this.user = hybridData;
-                this.logged = true;
-                this.loading = false;
-              } else {
-                this.logged = false;
-                this.loading = false;
-                localStorage.removeItem("hybridToken");
-                this.gotoPage("/", "login")
+            var userData = initializeUser();
+            if(userData.isThere){
+              if(userData.type == "hybrid"){
+                this.user = userData.data.user;
+                this.logged = userData.data.logged;
+                this.loading = userData.data.loading;
+                this.$meta().refresh
+              } else if(userData.type == "normal"){
+                this.user = userData.data.user;
+                this.token = userData.data.token;
+                this.logged = userData.data.logged;
+                this.loading = userData.data.loading;
+                this.admin = userData.data.admin;
+                this.$meta().refresh
+                this.superadmin = userData.data.superadmin;
               }
-            } else if (user != null && token != null){
-              var tokenData = JSON.parse(this.$hash.AES.decrypt(token, this.$pass).toString(this.$hash.enc.Utf8));
-              var userData = JSON.parse(this.$hash.AES.decrypt(user, this.$pass).toString(this.$hash.enc.Utf8));
-              this.user = userData;
-              this.token = tokenData;
-              this.logged = true;
-              this.loading = false;
             } else {
-              this.logged = false
-              this.loading = false;
+              this.$meta().refresh
+              this.logged = userData.data.logged;
+              this.loading = userData.data.loading;
             }
-          },
-          shuffle(array) {
-            var currentIndex = array.length, temporaryValue, randomIndex;
-            while (0 !== currentIndex) {
-              randomIndex = Math.floor(Math.random() * currentIndex);
-              currentIndex -= 1;
-              temporaryValue = array[currentIndex];
-              array[currentIndex] = array[randomIndex];
-              array[randomIndex] = temporaryValue;
-            }
-            return array
           },
           verifyEmail(e) {
             this.loading = true;
@@ -354,35 +353,13 @@ import 'vue-loading-overlay/dist/vue-loading.css';
               })
             }
           },
-          scrollTo(element, scrollPixels, duration) {
-            const scrollPos = element.scrollLeft;
-            if ( !( (scrollPos === 0 || scrollPixels > 0) && (element.clientWidth + scrollPos === element.scrollWidth || scrollPixels < 0)))
-            {
-              const startTime =
-                "now" in window.performance
-                  ? performance.now()
-                  : new Date().getTime();
-
-              function scroll(timestamp) {
-                const timeElapsed = timestamp - startTime;
-                const progress = Math.min(timeElapsed / duration, 1);
-                element.scrollLeft = scrollPos + scrollPixels * progress;
-                if (timeElapsed < duration) {
-                  window.requestAnimationFrame(scroll);
-                } else {
-                  return;
-                }
-              }
-              window.requestAnimationFrame(scroll);
-            }
-          },
           swipeLeft(func) {
             const content = "this.$refs."+func;
-            this.scrollTo(eval(content), -300, 400);
+            scrollTo(eval(content), -300, 400);
           },
           swipeRight(func) {
             const content = "this.$refs."+func;
-            this.scrollTo(eval(content), 300, 400);
+            scrollTo(eval(content), 300, 400);
           },
           validateData(){
             const emailRegex = /[a-z1-9].+@+[a-z1-9A-Z].+[.][a-z]+/g
@@ -393,12 +370,12 @@ import 'vue-loading-overlay/dist/vue-loading.css';
             }
           },
           filterArrSlice(array){
-            return this.shuffle(array.filter((arr) => {
+            return shuffle(array.filter((arr) => {
               return arr.root == this.currgd.id
-            })[0].link).slice(0,1)
+            })[0].link)[0]
           },
           filterArr(array) {
-            return this.shuffle(array.filter((arr) => {
+            return shuffle(array.filter((arr) => {
               return arr.root == this.currgd.id
             })[0].link)
           }
@@ -406,41 +383,32 @@ import 'vue-loading-overlay/dist/vue-loading.css';
         beforeMount() {
           this.netflix = window.themeOptions.netflix_home;
           this.mainhero = this.filterArrSlice(window.mainHeroLinks);
+          this.mainHeroArray = this.filterArr(window.mainHeroLinks);
           this.trending = this.filterArr(window.trendingPosterLinks);
           this.category = this.filterArr(window.homeCategories);
           this.quickLinks = this.filterArr(window.quickLinks);
           this.assignUserInfo();
         },
         mounted() {
-          if(this.user.admin && this.user.superadmin){
-            this.admin = true,this.superadmin = true, this.loading = false;
-          } else if(this.user.admin && !this.user.superadmin){
-            this.admin = true, this.loading = false;
+          if(!this.logged && this.$audio.player() != undefined) this.$audio.destroy();
+          if(window.themeOptions.home_background_image){
+            this.backurl = window.themeOptions.home_background_image;
           } else {
-            this.loading = false;
+            this.backurl = "https://i.ibb.co/bsqHW2w/Lamplight-Mobile.gif"
           }
         },
         created() {
-          if (window.gds) {
-            this.gds = window.gds.map((item, index) => {
-              return {
-                name: item,
-                id: index,
-              };
-            });
-            let index = this.$route.params.id;
-            if (this.gds) {
-              this.currgd = this.gds[index];
+          let gddata = getgds(this.$route.params.id);
+          this.gds = gddata.gds;
+          this.currgd = gddata.current;
+          setInterval(() => {
+            this.mainhero = this.mainHeroArray[this.mainKey]
+            if(this.mainKey == this.mainHeroArray.length-1){
+              this.mainKey = 0;
+            } else {
+              this.mainKey++;
             }
-          }
-        },
-        updated() {
-          this.$bus.$on('logged', () => {
-            this.assignUserInfo();
-          })
-          this.$bus.$on('logout', () => {
-            this.assignUserInfo();
-          })
+          }, 5000)
         },
         computed: {
           ismobile() {
@@ -450,6 +418,11 @@ import 'vue-loading-overlay/dist/vue-loading.css';
             } else {
               return true
             }
+          },
+          siteName() {
+            return window.gds.filter((item, index) => {
+              return index == this.$route.params.id;
+            })[0];
           },
         },
         watch: {

@@ -21,13 +21,27 @@
 </template>
 
 <script>
+import { getgds } from "@utils/localUtils";
 import Loading from 'vue-loading-overlay';
 import 'vue-loading-overlay/dist/vue-loading.css';
     export default {
+      metaInfo() {
+        return {
+          title: this.metatitle,
+          titleTemplate: (titleChunk) => {
+            if(titleChunk && this.siteName){
+              return titleChunk ? `${titleChunk} | ${this.siteName}` : `${this.siteName}`;
+            } else {
+              return "Loading..."
+            }
+          },
+        }
+      },
         data () {
             return {
               data: "",
               loading: true,
+              metatitle: "Navigating..",
               success: false,
               gds: [],
               currgd: {},
@@ -37,21 +51,20 @@ import 'vue-loading-overlay/dist/vue-loading.css';
         components: {
           Loading,
         },
+        computed: {
+          siteName() {
+            return window.gds.filter((item, index) => {
+              return index == this.$route.params.id;
+            })[0];
+          },
+        },
         beforeMount() {
-          if (window.gds && window.gds.length > 0) {
-            this.gds = window.gds.map((item, index) => {
-              return {
-                name: item,
-                id: index,
-              };
-            });
-            let index = this.$route.params.id;
-            if (this.gds && this.gds.length >= index) {
-              this.currgd = this.gds[index];
-            }
-          }
+          let gddata = getgds(this.$route.params.id);
+          this.gds = gddata.gds;
+          this.currgd = gddata.current;
         },
         mounted: function() {
+          if(this.$audio.player() != undefined) this.$audio.destroy();
           if(this.$route.params.data && this.$route.params.noredirect){
             this.data = this.$route.params.data;
             this.success = this.$route.params.success;

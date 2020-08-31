@@ -75,7 +75,7 @@
                   <div class="b-checkbox is-success is-circular is-inline">
                     <input class="styled has-text-success" type="checkbox" id="terms" name="terms" v-model="checked">
                     <label for="terms">
-                      <span class="content has-text-white">  I Accept and Read the <a class="has-text-success" >Community Guidelines</a></span>
+                      <span class="content has-text-white">  I Accept and Read the <a class="has-text-success" href="https://raw.githubusercontent.com/souvikmondal97/happy4geeks/dark-mode-0-1/CONTRIBUTING.md" target="_blank">Community Guidelines</a></span>
                     </label>
                   </div>
                 </div>
@@ -85,7 +85,7 @@
                   <div class="b-checkbox is-success is-circular is-inline">
                     <input class="styled has-text-success" type="checkbox" id="code" name="terms" v-model="codechecked">
                     <label for="code">
-                      <span class="content has-text-white">  I Accept and Read the <a class="has-text-success">Code of Conduct</a></span>
+                      <span class="content has-text-white">  I Accept and Read the <a class="has-text-success" href="https://github.com/souvikmondal97/happy4geeks/blob/dark-mode-0-1/CODE_OF_CONDUCT.md" target="_blank">Code of Conduct</a></span>
                     </label>
                   </div>
                 </div>
@@ -135,8 +135,8 @@
                           <ul>
                             <li> Promote a User to Admin</li>
                             <li> Promote a Admin to Superadmin</li>
-                            <li> Invite a Admin for Superadmin Role through Happy4Geeks mail Service</li>
-                            <li> Invite a user for Admin Role through Happy4Geeks mail Service</li>
+                            <li> Invite a Admin for Superadmin Role throught Happy4Geeks mail Service</li>
+                            <li> Invite a user for Admin Role throught Happy4Geeks mail Service</li>
                           </ul>
                         </div>
                         <div class="column is-full">
@@ -189,15 +189,32 @@
     </div>
 </template>
 <script>
+import {
+  initializeUser,
+  getgds,
+} from "@utils/localUtils";
 import Loading from 'vue-loading-overlay';
 import 'vue-loading-overlay/dist/vue-loading.css';
     export default {
       components: {
         Loading
       },
+      metaInfo() {
+        return {
+          title: this.metatitle,
+          titleTemplate: (titleChunk) => {
+            if(titleChunk && this.siteName){
+              return titleChunk ? `${titleChunk} | ${this.siteName}` : `${this.siteName}`;
+            } else {
+              return "Loading..."
+            }
+          },
+        }
+      },
         props : ["nextUrl"],
         data(){
             return {
+                metatitle: "Previlege Request",
                 user: {},
                 admin: false,
                 superadmin: false,
@@ -220,6 +237,7 @@ import 'vue-loading-overlay/dist/vue-loading.css';
         },
         methods : {
             handleSubmit(e) {
+              this.metatitle = "Verifying Your Details.."
               this.loading = true;
                 e.preventDefault()
                 if(this.checked && this.codechecked){
@@ -233,11 +251,13 @@ import 'vue-loading-overlay/dist/vue-loading.css';
                         if(response.data.auth && response.data.registered){
                           this.successMessage = true;
                           this.errorMessage = false;
+                          this.metatitle = "Request Sent...";
                           this.loading = false;
                           this.resultmessage = response.data.message
                         } else {
                           this.successMessage = false;
                           this.errorMessage = true;
+                          this.metatitle = "Request Failed...";
                           this.loading = false;
                           this.resultmessage = response.data.message
                         }
@@ -249,6 +269,7 @@ import 'vue-loading-overlay/dist/vue-loading.css';
                 } else {
                   this.successMessage = false;
                   this.errorMessage = true;
+                  this.metatitle = "Request Failed...";
                   this.loading = false;
                   this.resultmessage = "You Need to Accept Community Guidelines."
                 }
@@ -269,45 +290,64 @@ import 'vue-loading-overlay/dist/vue-loading.css';
             } else {
               return true
             }
-          }
+          },
+          siteName() {
+            return window.gds.filter((item, index) => {
+              return index == this.$route.params.id;
+            })[0];
+          },
         },
         beforeMount() {
           this.loading = true;
-          var token = localStorage.getItem("tokendata");
-          var user = localStorage.getItem("userdata");
-          if (user != null && token != null){
-            var userData = JSON.parse(this.$hash.AES.decrypt(user, this.$pass).toString(this.$hash.enc.Utf8));
-            this.user = userData, this.loading = false;
+          this.$http.post(window.apiRoutes.getSiteSettings).then(response => {
+            if(response.data.auth && response.data.registered){
+              if(response.data.data.adminRequests){
+                this.loading = false;
+              } else {
+                this.loading = false;
+                this.$router.push({ name: 'results', params: {id: this.currgd.id, cmd: 'result', success: false, data: "User Requests are Closed by the Admin. Please Try Afterwards or Contact Admins.", noredirect: true} })
+              }
+            } else {
+              this.loading = false;
+            }
+          })
+          this.loading = true;
+          var userData = initializeUser();
+          if(userData.isThere){
+            if(userData.type == "hybrid"){
+              this.user = userData.data.user;
+              this.logged = userData.data.logged;
+              this.loading = userData.data.loading;
+            } else if(userData.type == "normal"){
+              this.user = userData.data.user;
+              this.token = userData.data.token;
+              this.logged = userData.data.logged;
+              this.loading = userData.data.loading;
+              this.admin = userData.data.admin;
+              this.superadmin = userData.data.superadmin;
+            }
           } else {
-            this.user = null, this.loading = false;
+            this.logged = userData.data.logged;
+            this.loading = userData.data.loading;
           }
         },
         mounted(){
           this.loading = true;
-          if(!this.user.admin && !this.user.superadmin){
+          if(!this.admin && !this.superadmin){
             this.apiurl = window.apiRoutes.requestadminroute;
-            this.admin = false, this.superadmin = false, this.role = 'admin', this.loading = false;
-          } else if(this.user.admin && !this.user.superadmin) {
+            this.role = 'admin', this.loading = false;
+          } else if(this.admin && !this.superadmin) {
             this.apiurl = window.apiRoutes.requestsuperadminroute;
-            this.admin = true, this.superadmin = false, this.role = "superadmin", this.loading = false;
+            this.role = "superadmin", this.loading = false;
           } else {
             this.loading = false;
-            // this.$router.push({ name: 'results', params: { id: this.currgd.id, cmd: "result", success: false, data: "You are Already a Admin or SuperAdmin", redirectUrl: "/", tocmd: "home" } })
+            this.$router.push({ name: 'results', params: { id: this.currgd.id, cmd: "result", success: false, data: "You are Already a Admin or SuperAdmin", redirectUrl: "/", tocmd: "home" } })
           }
         },
         created() {
-          if (window.gds) {
-            this.gds = window.gds.map((item, index) => {
-              return {
-                name: item,
-                id: index,
-              };
-            });
-            let index = this.$route.params.id;
-            if (this.gds) {
-              this.currgd = this.gds[index];
-            }
-          }
+          let gddata = getgds(this.$route.params.id);
+          this.gds = gddata.gds;
+          this.currgd = gddata.current;
         },
         watch: {
           role: "validateData",

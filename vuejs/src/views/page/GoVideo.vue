@@ -1,32 +1,56 @@
 <template>
   <div :class="ismobile ? 'content nopad mt-2 mx-1 px-1 mt-2' : 'content nopad mt-2 mt-2 ml-5 mr-5'">
+    <div class="loading">
+      <loading :active.sync="mainLoad" :can-cancel="false" :is-full-page="fullpage"></loading>
+    </div>
     <div class="columns is-multiline is-centered">
       <div :class="ismobile ? 'column is-full mx-0 px-1' : 'column is-two-thirds'">
         <div class="columns is-desktop is-multiline is-centered">
           <div class="column is-full">
-            <vue-plyr ref="plyr">
-              <video :src="apiurl" class="video-content">
+            <div class="has-text-right is-small">
+              <span class="icon has-text-netflix-only is-medium">
+                <i :class="playicon"></i>
+              </span>
+              <span class="subtitle has-text-netflix-only">{{ playtext }}</span>
+            </div>
+            <vue-plyr ref="plyr" v-bind:key="videokey">
+              <video :poster="poster" :src="apiurl" class="video-content">
                 <source :src="apiurl" type="video/mp4" size="Original Format">
-                <track kind="captions" label="English captions" :src="suburl" srclang="en" default />
+                <track v-for="(sub, index) in suburl" kind="captions" :label="sub.label" :src="sub.url" :srclang="sub.label" v-bind:key="index">
               </video>
             </vue-plyr>
             <div class="box has-background-black">
-              <div class="columns is-mobile is-multiline has-text-white">
-                <div class="column is-1">
-                  <div class="columns is-desktop is-multiline has-text-white is-centered is-vcentered">
-                    <div class="column is-full">
-                      <p class="subtitle has-text-weight-bold has-text-netflix-only"><i class="fas fa-video"></i></p>
-                    </div>
-                  </div>
+              <div class="columns is-desktop is-vcentered is-multiline is-mobile">
+                <div :class="ismobile ? 'column is-full' : 'column is-8'">
+                    <p class="subtitle has-text-white has-text-weight-bold"> {{ decodeURIComponent(videoname.split('.').slice(0,-1).join('.')) }}</p>
                 </div>
-                <div :class="ismobile ? 'column is-11' : 'column is-7'">
-                    <p class="subtitle has-text-white has-text-weight-bold"> {{ videoname.split('.').slice(0,-1).join('.') }}</p>
+                <div :class="ismobile ? 'column has-text-netflix has-text-centered is-medium is-3' : 'column has-text-netflix is-medium has-text-centered is-1'">
+                  <button class="button is-netflix-red" @click="modal=true;" v-tooltip.bottom-start="'Play Externally.'">
+                    <span class="icon">
+                      <i class="fas fa-external-link-square-alt fontonly"></i>
+                    </span>
+                  </button>
                 </div>
-                <div :class="ismobile ? 'column is-hidden title has-text-weight-semibold has-text-right is-4' : 'column title has-text-weight-semibold has-text-right is-4'">
-                  <span class="icon has-text-netflix-only is-medium">
-                    <i :class="playicon"></i>
-                  </span>
-                  <span class="subtitle has-text-netflix-only ml-2">{{ playtext }}</span>
+                <div :class="ismobile ? 'column has-text-netflix has-text-centered is-medium is-3' : 'column has-text-netflix is-medium has-text-centered is-1'">
+                  <button class="button is-netflix-red" v-clipboard:copy="externalUrl" v-tooltip.bottom-start="'Copy Link'">
+                    <span class="icon">
+                      <i class="fa fa-copy fontonly"></i>
+                    </span>
+                  </button>
+                </div>
+                <div :class="ismobile ? 'column has-text-netflix has-text-centered is-medium is-3' : 'column has-text-netflix is-medium has-text-centered is-1'">
+                  <button class="button is-netflix-red" @click="downloadButton" v-tooltip.bottom-start="'Download Now.'">
+                    <span class="icon">
+                      <i class="fas fa-download fontonly"></i>
+                    </span>
+                  </button>
+                </div>
+                <div :class="ismobile ? 'column has-text-netflix has-text-centered is-medium is-3' : 'column has-text-netflix is-medium has-text-centered is-1'">
+                  <button class="button is-netflix-red" @click="subModal=true;" v-tooltip.bottom-start="'Load Custom Subtitles..'">
+                    <span class="icon">
+                      <i class="fas fa-closed-captioning fontonly"></i>
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -76,8 +100,13 @@
                 </article>
                 <div class="field">
                   <div class="control">
-                    <input :class=" subButLoad ? 'input is-success is-loading' : 'input is-success' " v-model="subripurl" type="text" :placeholder="'Enter Any Url or Give Path from Drive'">
+                    <input :class=" subButLoad ? 'input is-rounded is-success is-loading' : 'input is-rounded is-success' " v-model="subripurl" type="text" :placeholder="'Enter Any Url or Give Path from Drive'">
                   </div>
+                </div>
+                <div class="field">
+                  <p class="control">
+                    <input :class=" subButLoad ? 'input is-rounded is-success is-loading' : 'input is-rounded is-success' " placeholder="Label for Subtitle File" id="sublabel" type="text" v-model="custsublabel" required>
+                  </p>
                 </div>
                 <div class="content">
                   <li>Note: Only Give Valid Url's otherwise this page will get Hanged on Sent Back.</li>
@@ -85,53 +114,32 @@
                 </div>
               </section>
               <footer class="modal-card-foot">
-                <button :class=" subButLoad ? 'button is-loading is-success' : 'button is-success' " @click="loadCustomSub(subripurl)">Save changes</button>
+                <button :class=" subButLoad ? 'button is-loading is-success' : 'button is-success' " @click="loadCustomSub(subripurl, custsublabel)">Save changes</button>
               </footer>
-            </div>
-          </div>
-          <div class="column is-full">
-            <div class="box has-text-centered has-background-black">
-              <div class="columns is-centered is-vcentered is-multiline">
-                <div class="column is-quarter">
-                  <button class="button is-netflix-red is-rounded" v-clipboard:copy="videourl">
-                    <span class="icon is-small">
-                      <i class="fa fa-copy"></i>
-                    </span>
-                    <span>{{ ismobile ? 'Share Link' : 'Stream Link'}}</span>
-                  </button>
-                </div>
-                <div class="column is-quarter">
-                  <button class="button is-netflix-red is-rounded" @click="subModal=true;">
-                    <span class="icon">
-                      <i class="fa fa-upload"></i>
-                    </span>
-                    <span>Load Subtitles</span>
-                  </button>
-                </div>
-                <div v-if="ismobile" class="column is-quarter">
-                  <button class="button is-netflix-red is-rounded" @click="modal=true;">
-                    <span class="icon">
-                     <i class="fas fa-play"></i>
-                   </span>
-                   <span>External Players</span>
-                  </button>
-                </div>
-                <div class="column is-quarter">
-                  <button class="button is-netflix-red is-rounded" @click="downloadButton">
-                    <span class="icon">
-                     <i class="fas fa-download"></i>
-                   </span>
-                   <span>Download</span>
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="column is-one-third golist" v-loading="loading">
-        <h2 class="title has-text-centered has-text-weight-bold has-text-danger"><i class="fas fa-film"></i>  Continue Your Binge !</h2>
-          <div class="columns has-background-dark suggestList is-multiline is-mobile is-centered is-vcentered" v-for="(file, index) in getFilteredFiles" v-bind:key="index" @click="action(file,'view')">
+      <div :class="ismobile ? 'column is-centered is-vcentered is-one-third is-desktop golist' : 'column is-desktop is-centered is-vcentered is-one-third golist mt-4'" v-loading="loading">
+        <div class="column is-full">
+          <div class="columns is-mobile is-multiline is-centered is-vcentered">
+            <div :class="ismobile ? 'column is-full mx-0 my-0 py-1 px-0' : 'column is-two-thirds mx-0 px-0'">
+              <div class="field has-addons is-grouped">
+                <div class="control is-expanded has-icons-right is-dark">
+                  <input class="input is-rounded searchbar-input"  type="search" v-tooltip.bottom-start="'Filter Videos'" v-model="searchBarTerm" placeholder="Continue Your Binge / Search Videos Here..">
+                  <span class="icon has-text-netflix-only is-small is-right" style="padding:0 5px;">
+                    <i class="fas fa-search"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div :class="ismobile ? 'column is-full mx-0 my-0 px-0 py-1' : 'column is-one-third mx-0 px-0'">
+              <h6 class="has-text-right has-text-grey">Found {{ files ? files.length : "0" }} Results</h6>
+            </div>
+          </div>
+        </div>
+        <div class="column is-full">
+          <div class="columns has-background-dark suggestList is-multiline is-mobile is-centered is-vcentered" v-for="(file, index) in files" v-bind:key="index" @click="action(file,'view')">
             <div class="column is-2">
               <svg class="iconfont" style="font-size: 20px">
                 <use :xlink:href="getIcon(file.mimeType)" />
@@ -159,12 +167,13 @@
               </div>
             </div>
           </div>
-          <infinite-loading
-            v-show="!loading"
-            ref="infinite"
-            spinner="bubbles"
-            @infinite="infiniteHandler"
-          >
+        </div>
+        <infinite-loading
+          v-show="!loading"
+          ref="infinite"
+          spinner="bubbles"
+          @infinite="infiniteHandler"
+        >
           <div slot="no-more"></div>
           <div slot="no-results"></div>
         </infinite-loading>
@@ -180,6 +189,7 @@
 </template>
 
 <script>
+import { initializeUser, getgds } from "@utils/localUtils";
 import {
   formatDate,
   formatFileSize,
@@ -187,34 +197,57 @@ import {
   checkView,
   checkExtends,
 } from "@utils/AcrouUtil";
+import Loading from 'vue-loading-overlay';
 import InfiniteLoading from "vue-infinite-loading";
 import { mapState } from "vuex";
 import { decode64 } from "@utils/AcrouUtil";
-const srt2vtt = s =>
-	'WEBVTT FILE\r\n\r\n' +
-	s
-		.replace(/\{\\([ibu])\}/g, '</$1>')
-		.replace(/\{\\([ibu])1\}/g, '<$1>')
-		.replace(/\{([ibu])\}/g, '<$1>')
-		.replace(/\{\/([ibu])\}/g, '</$1>')
-		.replace(/(\d\d:\d\d:\d\d),(\d\d\d)/g, '$1.$2')
-		.concat('\r\n\r\n')
+import { srt2vtt } from "@utils/playUtils";
+
 export default {
   components: {
     InfiniteLoading,
+    Loading
+  },
+  metaInfo() {
+    return {
+      title: this.metatitle,
+      titleTemplate: (titleChunk) => {
+        if(titleChunk && this.siteName){
+          return titleChunk ? `${titleChunk} | ${this.siteName}` : `${this.siteName}`;
+        } else {
+          return "Loading..."
+        }
+      },
+    }
   },
   data: function() {
     return {
+      metatitle: "",
       apiurl: "",
+      externalUrl: "",
+      downloadUrl: "",
       videourl: "",
+      poster: "",
+      windowWidth: window.innerWidth,
+      screenWidth: screen.width,
+      mainLoad: false,
+      fullpage: true,
+      ismobile: false,
+      user: {},
+      token: {},
+      searchBarTerm: "",
+      searchBarfaIcon: "fab fa-searchengin",
+      videokey: 0,
+      mediaToken: "",
       modal: false,
       infiniteId: +new Date(),
       loading: true,
-      suburl: "",
+      suburl: [],
       sub: false,
       subModal: false,
       subButLoad: false,
       subripurl: "",
+      custsublabel: "",
       successMessage: false,
       resultmessage: "",
       playicon: "fas fa-spinner fa-pulse",
@@ -248,6 +281,7 @@ export default {
       this.render($state);
     },
     render($state) {
+      this.metatitle = "Loading...";
       var path = this.url.split(this.url.split('/').pop())[0];
       var password = localStorage.getItem("password" + path);
       var p = {
@@ -272,9 +306,15 @@ export default {
               page_index: body.curPageIndex,
             };
             if ($state) {
-              this.files.push(...this.buildFiles(data.files));
+              this.originalFiles.push(...this.buildFiles(data.files));
+              this.files.push(this.getFilteredFiles(...this.buildFiles(data.files)));
+              this.checkSuburl();
+              this.getPoster();
             } else {
-              this.files = this.buildFiles(data.files);
+              this.originalFiles = this.buildFiles(data.files)
+              this.files = this.getFilteredFiles(this.buildFiles(data.files));
+              this.checkSuburl();
+              this.getPoster();
             }
           }
           if (body.nextPageToken) {
@@ -290,6 +330,7 @@ export default {
         });
     },
     buildFiles(files) {
+      this.metatitle = decodeURIComponent(this.url.split('/').pop().split('.').slice(0,-1).join('.'));
       var path = this.url.split(this.url.split('/').pop())[0];
       return !files
         ? []
@@ -317,41 +358,45 @@ export default {
         this.$router.go(-1);
       }
     },
-    shuffle(array) {
-      var currentIndex = array.length, temporaryValue, randomIndex;
-
-      // While there remain elements to shuffle...
-      while (0 !== currentIndex) {
-
-        // Pick a remaining element...
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex -= 1;
-
-        // And swap it with the current element.
-        temporaryValue = array[currentIndex];
-        array[currentIndex] = array[randomIndex];
-        array[randomIndex] = temporaryValue;
+    checkMobile() {
+      var width = this.windowWidth > 0 ? this.windowWidth : this.screenWidth;
+      if(width > 966){
+        this.ismobile = false
+      } else {
+        this.ismobile = true
       }
-
-      return array
     },
     checkSuburl() {
       const toks = this.videoname.split('.');
-      const pathSansExt = toks.slice(0, -1).join('.')
-      return this.files.forEach(async (item) => {
+      const pathSansExt = toks.slice(0, -1).join('.');
+      const regext = new RegExp(`(?<name>${pathSansExt})`+'\\.(?<label>[\\s\\S\\D]+)\\.(?<format>srt|vtt)');
+      return this.originalFiles.forEach(async (item) => {
          if(item.name == pathSansExt + ".srt" || item.name == pathSansExt + ".vtt"){
-           let blob = await this.getSrtFile(item.path);
+           let url = item.path+"?player=internal"+"&token="+this.token.token+"&email="+this.user.email;
+           let blob = await this.getSrtFile(url);
            if(blob.success){
              this.sub = true;
-             this.suburl = blob.blobData;
+             this.suburl = this.suburl.concat([{url: blob.blobData, label: "Default"}]);
+             this.videokey = this.videokey + 1
            } else {
              this.sub = false;
-             this.suburl = "";
+             this.suburl = [];
+           }
+         } else if(regext.test(item.name)){
+           let groups = regext.exec(item.name).groups;
+           let url = item.path+"?player=internal"+"&token="+this.token.token+"&email="+this.user.email;
+           let blob = await this.getSrtFile(url);
+           if(blob.success){
+             this.sub = true;
+             this.suburl = this.suburl.concat([{url: blob.blobData, label: groups.label}]);
+             this.videokey = this.videokey + 1
+           } else {
+             this.sub = false;
+             this.suburl = [];
            }
          } else {
            this.sub = false;
-           this.suburl = "";
-           return;
+           this.suburl = [];
          }
       });
     },
@@ -371,13 +416,14 @@ export default {
         };
       }
     },
-    async loadCustomSub(url) {
+    async loadCustomSub(url, label) {
       this.subButLoad = true;
       const urlRegex = /(http:\/\/|https:\/\/[\s\S]+)/;
       if(urlRegex.test(url)){
         let blob = await this.getSrtFile(url);
         if(blob.success){
-          this.suburl = blob.blobData;
+          this.suburl = this.suburl.concat([{url: blob.blobData, label: label}]);
+          this.videokey = this.videokey + 1
           this.successMessage = true;
           this.resultmessage = "Subtitle Loaded Successfully !"
           this.subButLoad = false;
@@ -390,10 +436,11 @@ export default {
           this.subButLoad = false;
         }
       } else {
-        let getUrl = "/"+this.currgd.id+":/"+url;
+        let getUrl = "/"+this.currgd.id+":/"+url+"?player=internal"+"&token="+this.token.token+"&email="+this.user.email;
         let blob = await this.getSrtFile(getUrl);
         if(blob.success){
-          this.suburl = blob.blobData;
+          this.suburl = this.suburl.concat([{url: blob.blobData, label: label}]);
+          this.videokey = this.videokey + 1
           this.successMessage = true;
           this.resultmessage = "Subtitle Loaded Successfully !"
           this.subButLoad = false;
@@ -411,16 +458,24 @@ export default {
       return url ? `/${this.$route.params.id}:view?url=${url}` : "";
     },
     downloadButton() {
-      location.href = this.url.replace(/^\/(\d+:)\//, "/$1down/");
+      location.href = this.downloadUrl;
       return;
     },
     getVideourl() {
       // Easy to debug in development environment
       this.videourl = window.location.origin + encodeURI(this.url);
-      this.apiurl = this.videourl;
+      this.apiurl = this.videourl+"?player=internal"+"&email="+this.user.email+"&token="+this.token.token;
+      this.externalUrl = this.videourl+"?player=external"+"&email="+this.user.email+"&token="+this.mediaToken;
+      this.downloadUrl = this.videourl+"?player=download"+"&email="+this.user.email+"&token="+this.mediaToken;
     },
     getIcon(type) {
       return "#" + (this.icon[type] ? this.icon[type] : "icon-weizhi");
+    },
+    getPoster() {
+      var data = this.originalFiles.filter((file) => {
+        return file.name == this.videoname
+      })[0].thumbnailLink;
+      this.poster = data;
     },
     action(file, target) {
       if (file.mimeType.indexOf("image") != -1) {
@@ -465,28 +520,20 @@ export default {
         return;
       }
     },
-  },
-  activated() {
-    this.getVideourl();
-    this.render();
-    // this.getSrtFile("https://raw.githubusercontent.com/sampotts/plyr/master/demo/media/View_From_A_Blue_Moon_Trailer-HD.en.vtt");
-  },
-  computed: {
-    getFilteredFiles() {
-      this.checkSuburl();
-      return this.shuffle(this.files).filter(file => {
+    getFilteredFiles(rawFiles) {
+      const videoRegex = /(video)\/(.+)/
+      return rawFiles.filter(file => {
         return file.name != this.url.split('/').pop();
       }).filter(file => {
-        return file.mimeType == "video/mp4" || "video/x-matroska" || "video/x-msvideo" || "video/webm"
-      }).slice(0,15);
+        return videoRegex.test(file.mimeType);
+      });
     },
-    ismobile() {
-      var width = window.innerWidth > 0 ? window.innerWidth : screen.width;
-      if(width > 966){
-        return false
-      } else {
-        return true
-      }
+  },
+  computed: {
+    siteName() {
+      return window.gds.filter((item, index) => {
+        return index == this.$route.params.id;
+      })[0];
     },
     url() {
       if (this.$route.params.path) {
@@ -500,17 +547,28 @@ export default {
         {
           name: "IINA",
           icon: this.$cdnpath("images/player/iina.png"),
-          scheme: "iina://weblink?url=" + this.videourl,
+          scheme: "iina://weblink?url=" + this.externalUrl,
         },
         {
           name: "PotPlayer",
           icon: this.$cdnpath("images/player/potplayer.png"),
-          scheme: "potplayer://" + this.videourl,
+          scheme: "potplayer://" + this.externalUrl,
         },
         {
           name: "VLC",
           icon: this.$cdnpath("images/player/vlc.png"),
-          scheme: "vlc://" + this.videourl,
+          scheme: "vlc://" + this.externalUrl,
+        },
+        {
+          name: "Cast To TV",
+          icon: this.$cdnpath("images/player/cast.png"),
+          scheme:
+            "intent:" +
+            this.externalUrl +
+            "#Intent;package=com.instantbits.cast.webvideo;S.title=" +
+            this.title +
+            ";end",
+          
         },
         {
           name: "Thunder",
@@ -525,14 +583,14 @@ export default {
         {
           name: "nPlayer",
           icon: this.$cdnpath("images/player/nplayer.png"),
-          scheme: "nplayer-" + this.videourl,
+          scheme: "nplayer-" + this.externalUrl,
         },
         {
           name: "MXPlayer(Free)",
           icon: this.$cdnpath("images/player/mxplayer.png"),
           scheme:
             "intent:" +
-            this.videourl +
+            this.externalUrl +
             "#Intent;package=com.mxtech.videoplayer.ad;S.title=" +
             this.title +
             ";end",
@@ -542,7 +600,7 @@ export default {
           icon: this.$cdnpath("images/player/mxplayer.png"),
           scheme:
             "intent:" +
-            this.videourl +
+            this.externalUrl +
             "#Intent;package=com.mxtech.videoplayer.pro;S.title=" +
             this.title +
             ";end",
@@ -550,24 +608,51 @@ export default {
       ];
     },
     getThunder() {
-      return Buffer.from("AA" + this.videourl + "ZZ").toString("base64");
+      return Buffer.from("AA" + this.externalUrl + "ZZ").toString("base64");
     },
   },
   created() {
-    if (window.gds) {
-      this.gds = window.gds.map((item, index) => {
-        return {
-          name: item,
-          id: index,
-        };
-      });
-      let index = this.$route.params.id;
-      if (this.gds) {
-        this.currgd = this.gds[index];
+    let gddata = getgds(this.$route.params.id);
+    this.gds = gddata.gds;
+    this.currgd = gddata.current;
+  },
+  async beforeMount() {
+    this.mainload = true;
+    var userData = await initializeUser();
+    if(userData.isThere){
+      if(userData.type == "hybrid"){
+        this.user = userData.data.user;
+        this.logged = userData.data.logged;
+      } else if(userData.type == "normal"){
+        this.user = userData.data.user;
+        this.token = userData.data.token;
+        this.logged = userData.data.logged;
       }
+    } else {
+      this.logged = userData.data.logged;
     }
+    await this.$http.post(window.apiRoutes.mediaTokenTransmitter, {
+      email: userData.data.user.email,
+      token: userData.data.token.token,
+    }).then(response => {
+      if(response.data.auth && response.data.registered && response.data.token){
+        this.mainLoad = false;
+        this.mediaToken = response.data.token;
+        this.getVideourl();
+      } else {
+        this.mainLoad = false;
+        this.mediaToken = "";
+      }
+    }).catch(e => {
+      console.log(e);
+      this.mainLoad = false;
+      this.mediaToken = "";
+    })
   },
   mounted() {
+    if(this.$audio.player() != undefined) this.$audio.destroy();
+    this.checkMobile();
+    this.render();
     if(window.themeOptions.loading_image){
       this.loadImage = window.themeOptions.loading_image;
     } else {
@@ -577,16 +662,48 @@ export default {
     this.videoname = this.url.split('/').pop();
   },
   watch: {
+    searchBarTerm: function() {
+      if(this.searchBarTerm.length > 0){
+        const searchRegex = new RegExp(this.searchBarTerm.toLowerCase());
+        this.files = this.getFilteredFiles(this.originalFiles.filter((file) => {
+          return searchRegex.test(file.name.toLowerCase());
+        }));
+      } else {
+        this.files = this.getFilteredFiles(this.originalFiles);
+      }
+    },
+    screenWidth: function() {
+      var width = this.windowWidth > 0 ? this.windowWidth : this.screenWidth;
+      if(width > 966){
+        this.ismobile = false
+      } else {
+        this.ismobile = true
+      }
+    },
+    windowWidth: function() {
+      var width = this.windowWidth > 0 ? this.windowWidth : this.screenWidth;
+      if(width > 966){
+        this.ismobile = false
+      } else {
+        this.ismobile = true
+      }
+    },
     player: function(){
       this.player.on('ready', () => {
         this.playicon="fas fa-glasses";
-        this.playtext="Ready to Play !"
+        this.playtext="Let's Party"
       });
+      this.player.on('loadstart', () => {
+        this.playicon = "fas fa-spinner fa-pulse";
+        this.playtext = "Loading Awesomeness..";
+      })
       this.player.on('play', () => {
         this.playicon="fas fa-spin fa-compact-disc";
+        this.metatitle = "Playing"+"-"+decodeURIComponent(this.url.split('/').pop().split('.').slice(0,-1).join('.'));
         this.playtext="Playing"
       });
       this.player.on('pause', () => {
+        this.metatitle = "Paused"+"-"+decodeURIComponent(this.url.split('/').pop().split('.').slice(0,-1).join('.'));
         this.playicon="fas fa-pause",
         this.playtext="Paused"
       });

@@ -6,8 +6,8 @@
       </div>
       <div class="navbar-brand">
         <div class="navbar-item nav-link">
-          <h3 class="title has-text-netflix is-3" @click="homeroute">
-            {{ siteName }}
+          <h3 class="title has-text-netflix is-3" v-tooltip.bottom-start="'Home'" @click="homeroute">
+            {{ currgd.name }}
           </h3>
         </div>
         <a
@@ -32,7 +32,7 @@
         <div class="navbar-start">
           <a
             class="navbar-item"
-            title="OTP Registration"
+            v-tooltip.bottom-start="'OTP Registration'"
             v-if="!logged"
             @click="gotoPage('/otp/', 'register')"
            >
@@ -40,7 +40,7 @@
           </a>
           <a
             class="navbar-item"
-            title="Request Access"
+            v-tooltip.bottom-start="'Request Access'"
             v-if="!logged"
             @click="gotoPage('/request/user/', 'register')"
            >
@@ -48,7 +48,7 @@
           </a>
           <a
             class="navbar-item"
-            title="Login"
+            v-tooltip.bottom-start="'Login'"
             v-if="!logged"
             @click="gotoPage('/', 'login')"
            >
@@ -58,7 +58,7 @@
             class="navbar-item"
             v-show="logged"
             v-for="(link, index) in quicklinks.slice(0,3)"
-            :title="link.displayname"
+            v-tooltip.bottom-start="link.displayname"
             v-bind:key="index"
             @click="gotoPage('/'+ link.link + '/')"
            >
@@ -66,6 +66,7 @@
           </a>
           <a
             class="navbar-item"
+            v-tooltip.bottom-start="'Go to Root'"
             v-show="logged"
             title="All"
             @click="gotoPage('/')"
@@ -103,17 +104,31 @@
               >
             </div>
           </div>
-          <div v-if="logged" class="navbar-item" v-show="showSearch">
+          <a
+            class="navbar-item"
+            v-tooltip.bottom-start="'Search'"
+            v-if="logged && !searchBar"
+            @click="searchBar = true"
+           >
+            <span class="icon">
+              <i class="fas fa-search"></i>
+            </span>
+            <span  class="is-hidden-desktop">Search</span>
+          </a>
+          <div v-if="logged" class="navbar-item" v-show="showSearch && searchBar">
             <div class="field is-grouped">
               <p class="control has-icons-right is-dark" style="width:100%;">
                 <input
                   class="input is-rounded search-input"
                   @keyup.enter="query"
+                  @keyup.esc="searchBar = !searchBar"
+                  v-tooltip.bottom-start="'Search the Drive'"
                   v-model="param"
                   type="search"
+                  autofocus
                   :placeholder="$t('search.placeholder')"
                 />
-                <span class="icon is-small is-right" style="padding:0 5px;">
+                <span class="icon is-small is-right">
                   <i class="fas fa-search"></i>
                 </span>
               </p>
@@ -121,7 +136,20 @@
           </div>
           <a
             class="navbar-item"
+            title="Logout"
+            v-tooltip.bottom-start="'Stop Music Player'"
+            @click="closeMusicPlayer()"
+            v-if="logged && miniplayer"
+           >
+           <span class="icon">
+            <i class="fas fa-volume-mute"></i>
+          </span>
+          <span class="is-hidden-desktop">Stop Player</span>
+          </a>
+          <a
+            class="navbar-item"
             title="Profile"
+            v-tooltip.bottom-start="'Go to Settings'"
             @click="gotoPage('/' ,'settings')"
             v-if="logged"
            >
@@ -133,6 +161,7 @@
           <a
             class="navbar-item"
             title="Admin Panel"
+            v-tooltip.bottom-start="'Admin Panel'"
             v-if="logged && admin"
             @click="gotoPage('/','admin')"
            >
@@ -144,6 +173,7 @@
           <a
             class="navbar-item"
             title="Logout"
+            v-tooltip.bottom-start="'Logout'"
             @click="logout"
             v-if="logged"
            >
@@ -165,6 +195,8 @@
 </template>
 
 <script>
+import { getItem, removeItem } from '@utils/encryptUtils';
+import { initializeUser } from "@utils/localUtils";
 import ViewMode from "@/layout/viewmode";
 import Loading from 'vue-loading-overlay';
 export default {
@@ -180,6 +212,18 @@ export default {
     this.$bus.$on('logout', () => {
       this.loginorout();
       this.changeNavbarStyle()
+    })
+    this.$bus.$on("music-toggled", () => {
+      if(this.$audio.player() == undefined){
+        this.miniplayer = false;
+      } else if(this.$audio.player() != undefined){
+        this.miniplayer = true;
+      }
+    })
+    this.$bus.$on('td', () => {
+      this.quicklinks = window.quickLinks.filter((links) => {
+        return links.root == this.gdindex
+      })[0].link;
     })
     this.loginorout();
     this.active = false;
@@ -201,6 +245,7 @@ export default {
   data: function() {
     return {
       user: {},
+      token: {},
       siteName: "",
       active: false,
       param: "",
@@ -209,7 +254,9 @@ export default {
       navbarStyle: "",
       netflix_black: false,
       mouseover: false,
+      miniplayer: false,
       backgroundClass: "",
+      searchBar: false,
       fullpage: true,
       logged: false,
       admin: false,
@@ -232,6 +279,7 @@ export default {
       }
     },
     changeItem(item) {
+      this.$bus.$emit("td", "TD Changed");
       this.currgd = item;
       this.$router.push({
         path: '/'+item.index+':home/',
@@ -252,40 +300,24 @@ export default {
       this.active = !this.active
     },
     loginorout() {
-      var token = localStorage.getItem("tokendata");
-      var user = localStorage.getItem("userdata");
-      var hyBridToken = localStorage.getItem("hybridToken");
-      console.log(hyBridToken);
-      if(hyBridToken && hyBridToken != null || hyBridToken != undefined){
-        const hybridData = JSON.parse(this.$hash.AES.decrypt(hyBridToken, this.$pass).toString(this.$hash.enc.Utf8))
-        console.log(hybridData);
-        if(hybridData.user){
-          this.user = hybridData;
-          this.logged = true;
-          this.admin = false;
-          this.superadmin = false;
-          this.loading = false;
-        } else {
-          localStorage.removeItem("hybridToken");
-          this.gotoPage("/", "login")
-        }
-      } else if (user != null && token != null){
-        var userData = JSON.parse(this.$hash.AES.decrypt(user, this.$pass).toString(this.$hash.enc.Utf8));
-        if(userData.admin && !userData.superadmin){
-          this.user = userData;
-          this.logged = true;
-          this.admin = true;
-        } else if(userData.admin && userData.superadmin){
-          this.user = userData;
-          this.logged = true;
-          this.admin = true;
-          this.superadmin = true
-        } else {
-          this.user = userData;
-          this.logged = true
+      this.loading = true;
+      var userData = initializeUser();
+      if(userData.isThere){
+        if(userData.type == "hybrid"){
+          this.user = userData.data.user;
+          this.logged = userData.data.logged;
+          this.loading = userData.data.loading;
+        } else if(userData.type == "normal"){
+          this.user = userData.data.user;
+          this.token = userData.data.token;
+          this.logged = userData.data.logged;
+          this.loading = userData.data.loading;
+          this.admin = userData.data.admin;
+          this.superadmin = userData.data.superadmin;
         }
       } else {
-        this.logged = false
+        this.logged = userData.data.logged;
+        this.loading = userData.data.loading;
       }
     },
     homeroute() {
@@ -306,17 +338,17 @@ export default {
     logout() {
       this.loading = true;
       this.isActive = !this.isActive;
-      var token = localStorage.getItem("tokendata")
-      var user = localStorage.getItem("userdata");
-      var hyBridToken = localStorage.getItem("hybridToken");
+      var token = getItem("tokendata")
+      var user = getItem("userdata");
+      var hyBridToken = getItem("hybridToken");
       if(hyBridToken && hyBridToken != null || hyBridToken != undefined){
-        localStorage.removeItem("hybridToken");
+        removeItem("hybridToken");
         this.$bus.$emit("logout", "User Logged Out");
         this.loading = false;
         this.$router.push({ name: 'results' , params: { id: this.gdindex, cmd: "result", success:true, data: "You are Being Logged Out. Please Wait", redirectUrl: '/', tocmd:'home' } })
       } else if (user != null && token != null){
-        localStorage.removeItem("tokendata");
-        localStorage.removeItem("userdata");
+        removeItem("tokendata");
+        removeItem("userdata");
         this.$bus.$emit("logout", "User Logged Out");
         this.loading = false;
         this.$router.push({ name: 'results' , params: { id: this.gdindex, cmd: "result", success:true, data: "You are Being Logged Out. Please Wait", redirectUrl: '/', tocmd:'home' } })
@@ -332,12 +364,22 @@ export default {
         this.navbarStyle = "black";
         this.backgroundClass = "none";
       }
+    },
+    closeMusicPlayer(){
+      if(this.$audio.player() == undefined) return;
+      this.$audio.destroy();
+      this.$bus.$emit("music-toggled", "Music Toggled")
     }
   },
   computed: {
     showSearch() {
 // Folder does not support searching
       return window.MODEL ? window.MODEL.root_type < 2 : true
+    },
+    siteTitle() {
+      return window.gds.filter((item, index) => {
+        return index == this.$route.params.id;
+      })[0];
     },
     ismobile() {
       var width = window.innerWidth > 0 ? window.innerWidth : screen.width;
