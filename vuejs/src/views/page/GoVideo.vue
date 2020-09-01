@@ -189,6 +189,7 @@
 </template>
 
 <script>
+import { apiRoutes, backendHeaders } from "@/utils/backendUtils";
 import { initializeUser, getgds } from "@utils/localUtils";
 import {
   formatDate,
@@ -296,10 +297,10 @@ export default {
       } else {
         this.logged = userData.data.logged;
       }
-      await this.$http.post(window.apiRoutes.mediaTokenTransmitter, {
+      await this.$http.post(apiRoutes.mediaTokenTransmitter, {
         email: userData.data.user.email,
         token: userData.data.token.token,
-      }).then(response => {
+      }, backendHeaders(userData.data.token.token)).then(response => {
         if(response.data.auth && response.data.registered && response.data.token){
           this.mediaToken = response.data.token;
         } else {
@@ -644,15 +645,14 @@ export default {
     players() {
       return [
         {
-          name: "Cast To TV",
-          icon: this.$cdnpath("images/player/cast.png"),
-          scheme:
-            "intent:" +
-            this.externalUrl +
-            "#Intent;package=com.instantbits.cast.webvideo;title=" +
-            this.title +
-            ";end",
-          
+          name: "IINA",
+          icon: this.$cdnpath("images/player/iina.png"),
+          scheme: "iina://weblink?url=" + this.externalUrl,
+        },
+        {
+          name: "PotPlayer",
+          icon: this.$cdnpath("images/player/potplayer.png"),
+          scheme: "potplayer://" + this.externalUrl,
         },
         {
           name: "VLC",
@@ -664,7 +664,11 @@ export default {
           icon: this.$cdnpath("images/player/thunder.png"),
           scheme: "thunder://" + this.getThunder,
         },
-        
+        {
+          name: "Aria2",
+          icon: this.$cdnpath("images/player/aria2.png"),
+          scheme: 'javascript:alert("Not Yet Supported")',
+        },
         {
           name: "nPlayer",
           icon: this.$cdnpath("images/player/nplayer.png"),
