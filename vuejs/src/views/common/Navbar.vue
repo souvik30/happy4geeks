@@ -227,6 +227,7 @@ export default {
     })
     this.loginorout();
     this.active = false;
+    this.$ga.event({eventCategory: "Site Initialized",eventAction: "Normal - "+this.siteTitle,eventLabel: "Navbar",nonInteraction: true})
     this.siteName = document.getElementsByTagName("title")[0].innerText;
     if (window.gds && window.gds.length > 0) {
       this.gds = window.gds.map((item, index) => {
@@ -279,6 +280,7 @@ export default {
       }
     },
     changeItem(item) {
+      this.$ga.event({eventCategory: "TD Change",eventAction: "Normal - "+this.siteName,eventLabel: "Navbar",nonInteraction: true})
       this.$bus.$emit("td", "TD Changed");
       this.currgd = item;
       this.$router.push({
@@ -286,6 +288,7 @@ export default {
       });
     },
     query() {
+      this.$ga.event({eventCategory: "Query",eventAction: "Normal - "+this.siteName,eventLabel: "Navbar",nonInteraction: true})
       if (this.param) {
         this.isActive = !this.isActive;
         this.$router.push({
@@ -305,10 +308,12 @@ export default {
       if(userData.isThere){
         if(userData.type == "hybrid"){
           this.user = userData.data.user;
+          this.$ga.event({eventCategory: "User Initialized",eventAction: "Hybrid",eventLabel: "Navigator",nonInteraction: true})
           this.logged = userData.data.logged;
           this.loading = userData.data.loading;
         } else if(userData.type == "normal"){
           this.user = userData.data.user;
+          this.$ga.event({eventCategory: "User Initialized",eventAction: "Normal",eventLabel: "Navigator",nonInteraction: true})
           this.token = userData.data.token;
           this.logged = userData.data.logged;
           this.loading = userData.data.loading;
@@ -324,6 +329,7 @@ export default {
       this.$router.push({ path: '/'+ this.gdindex + ':' + 'home/' })
     },
     gotoPage(url, cmd) {
+      this.$ga.event({eventCategory: "Page Navigation",eventAction: url+" - "+this.currgd.name,eventLabel: "Navigator"})
       this.isActive = !this.isActive;
       this.loading = true;
       if(cmd){
@@ -345,12 +351,14 @@ export default {
         removeItem("hybridToken");
         this.$bus.$emit("logout", "User Logged Out");
         this.loading = false;
+        this.$ga.event({eventCategory: "User Logout",eventAction: "Hybrid"+" - "+this.currgd.name,eventLabel: "Navigator"})
         this.$router.push({ name: 'results' , params: { id: this.gdindex, cmd: "result", success:true, data: "You are Being Logged Out. Please Wait", redirectUrl: '/', tocmd:'home' } })
       } else if (user != null && token != null){
         removeItem("tokendata");
         removeItem("userdata");
         this.$bus.$emit("logout", "User Logged Out");
         this.loading = false;
+        this.$ga.event({eventCategory: "User Logout",eventAction: "Normal"+" - "+this.currgd.name,eventLabel: "Navigator"})
         this.$router.push({ name: 'results' , params: { id: this.gdindex, cmd: "result", success:true, data: "You are Being Logged Out. Please Wait", redirectUrl: '/', tocmd:'home' } })
       } else {
         this.loading = false;
@@ -400,6 +408,7 @@ export default {
   watch: {
     "$route.params.id": "chooseGD",
     "$route": function() {
+      this.$ga.event({eventCategory: "Route Change",eventAction: "Normal - "+this.siteName,eventLabel: "Navbar",nonInteraction: true})
       if(this.$route.name == 'home' && !this.logged){
         this.navbarStyle = "transparent";
         this.backgroundClass = "home-back";

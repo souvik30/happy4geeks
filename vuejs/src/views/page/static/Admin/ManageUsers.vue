@@ -254,6 +254,7 @@ export default {
       }
     },
     gotoPage(url, cmd) {
+      this.$ga.event({eventCategory: "Page Navigation",eventAction: url+" - "+this.siteName,eventLabel: "Manage Users"})
       if(cmd){
         this.$router.push({ path: '/'+ this.currgd.id + ':' + cmd + url })
       } else {
@@ -317,12 +318,14 @@ export default {
             this.successMessage = true;
             this.metatitle = "Invite Sent...";
             this.errorMessage = false;
+            this.$ga.event({eventCategory: "Invite",eventAction: "Success"+" - "+this.siteName,eventLabel: "Manage Users"})
             this.resultmessage = response.data.message;
             this.loading = false;
           } else {
             this.successMessage = false;
             this.errorMessage = true;
             this.metatitle = "Invite Failed...";
+            this.$ga.event({eventCategory: "Invite",eventAction: "Failed"+" - "+this.siteName,eventLabel: "Manage Users"})
             this.resultmessage = response.data.message;
             this.loading = false;
           }
@@ -396,10 +399,12 @@ export default {
     var userData = initializeUser();
     if(userData.isThere){
       if(userData.type == "hybrid"){
+        this.$ga.event({eventCategory: "User Initialized",eventAction: "Hybrid - "+this.siteName,eventLabel: "Manage Users",nonInteraction: true})
         this.user = userData.data.user;
         this.logged = userData.data.logged;
         this.loading = userData.data.loading;
       } else if(userData.type == "normal"){
+        this.$ga.event({eventCategory: "User Initialized",eventAction: "Normal - "+this.siteName,eventLabel: "Manage Users",nonInteraction: true})
         this.user = userData.data.user;
         this.token = userData.data.token;
         this.logged = userData.data.logged;
@@ -434,6 +439,11 @@ export default {
     let gddata = getgds(this.$route.params.id);
     this.gds = gddata.gds;
     this.currgd = gddata.current;
+    this.$ga.page({
+      page: this.$route.path,
+      title: "Manage Users"+" - "+this.siteName,
+      location: window.location.href
+    });
   },
   watch: {
     searchEmail: function(){

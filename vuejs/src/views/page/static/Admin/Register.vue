@@ -350,12 +350,14 @@ export default {
                           this.successMessage = true;
                           this.errorMessage = false;
                           this.metatitle = "Success...";
+                          this.$ga.event({eventCategory: "Add User",eventAction: "Success"+" - "+this.siteName,eventLabel: "Register"})
                           this.resultmessage = response.data.message
                         } else {
                           this.loading = false;
                           this.successMessage = false;
                           this.errorMessage = true;
                           this.metatitle = "Failed...";
+                          this.$ga.event({eventCategory: "Add User",eventAction: "Failed"+" - "+this.siteName,eventLabel: "Register"})
                           this.resultmessage = response.data.message
                         }
                       }
@@ -404,6 +406,7 @@ export default {
               })
             },
             gotoPage(url, cmd) {
+              this.$ga.event({eventCategory: "Page Navigation",eventAction: url+" - "+this.siteName,eventLabel: "Register"})
               if(cmd){
                 this.$router.push({ path: '/'+ this.currgd.id + ':' + cmd + url })
               } else {
@@ -437,9 +440,11 @@ export default {
                   if(response.data.auth && response.data.registered){
                     this.handleDelete(post, user);
                     this.metatitle = "Adding Spammers...";
+                    this.$ga.event({eventCategory: "Add Spam",eventAction: "Success"+" - "+this.siteName,eventLabel: "Register"})
                   } else {
                     this.metatitle = "Failed to Add";
                     this.loading = false;
+                    this.$ga.event({eventCategory: "Add Spam",eventAction: "Failed"+" - "+this.siteName,eventLabel: "Register"})
                   }
                 }
               })
@@ -467,10 +472,12 @@ export default {
                   if(response.data.auth && response.data.removed){
                     this.pendingUserList = [];
                     this.metatitle = "Removed";
+                    this.$ga.event({eventCategory: "Delete",eventAction: "Success"+" - "+this.siteName,eventLabel: "Register"})
                     this.getPendingUsers(reloadRoute);
                     this.loading = false;
                   } else {
                     this.metatitle = "Failed to Remove";
+                    this.$ga.event({eventCategory: "Delete",eventAction: "Failed"+" - "+this.siteName,eventLabel: "Register"})
                     this.loading = false;
                     this.modal = true;
                   }
@@ -500,10 +507,12 @@ export default {
           var userData = initializeUser();
           if(userData.isThere){
             if(userData.type == "hybrid"){
+              this.$ga.event({eventCategory: "User Initialized",eventAction: "Hybrid - "+this.siteName,eventLabel: "Register",nonInteraction: true})
               this.user = userData.data.user;
               this.logged = userData.data.logged;
               this.loading = userData.data.loading;
             } else if(userData.type == "normal"){
+              this.$ga.event({eventCategory: "User Initialized",eventAction: "Normal - "+this.siteName,eventLabel: "Register",nonInteraction: true})
               this.user = userData.data.user;
               this.token = userData.data.token;
               this.logged = userData.data.logged;
@@ -520,6 +529,11 @@ export default {
           let gddata = getgds(this.$route.params.id);
           this.gds = gddata.gds;
           this.currgd = gddata.current;
+          this.$ga.page({
+            page: this.$route.path,
+            title: "Add/Promote Users"+" - "+this.siteName,
+            location: window.location.href
+          });
         },
         watch: {
           role: function() {

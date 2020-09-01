@@ -107,7 +107,6 @@ import {
   formatDate,
   formatFileSize,
   checkoutPath,
-  checkExtends,
   decode64,
 } from "@utils/AcrouUtil";
 import 'aplayer/dist/APlayer.min.css';
@@ -148,11 +147,10 @@ export default {
       currgd: {},
       mediaToken: "",
       poster: "",
-      infiniteId: +new Date(),
-      loading: true,
       loadImage: "",
       player: "",
       playlist: [],
+      rawAudios: [],
       playicon: "fas fa-spinner fa-pulse",
       playtext: "Loading Stuffs....",
       audioname: "",
@@ -169,15 +167,69 @@ export default {
     Loading
   },
   methods: {
-    infiniteHandler($state) {
-      // The first time you enter the page does not execute the scroll event
-      if (!this.page.page_token) {
-        return;
+    async initializeUser() {
+      var userData = await initializeUser();
+      if(userData.isThere){
+        if(userData.type == "hybrid"){
+          this.user = userData.data.user;
+          this.$ga.event({eventCategory: "User Initialized",eventAction: "Hybrid - "+this.siteName,eventLabel: "Audio Page",nonInteraction: true})
+          this.logged = userData.data.logged;
+        } else if(userData.type == "normal"){
+          this.$ga.event({eventCategory: "User Initialized",eventAction: "Normal - "+this.siteName,eventLabel: "Audio Page",nonInteraction: true})
+          this.user = userData.data.user;
+          this.token = userData.data.token;
+          this.logged = userData.data.logged;
+        }
+      } else {
+        this.logged = userData.data.logged;
       }
-      this.page.page_token++;
-      this.render($state);
+      await this.$http.post(window.apiRoutes.mediaTokenTransmitter, {
+        email: userData.data.user.email,
+        token: userData.data.token.token,
+      }).then(response => {
+        if(response.data.auth && response.data.registered && response.data.token){
+          this.mediaToken = response.data.token;
+        } else {
+          this.mediaToken = "";
+        }
+      }).catch(e => {
+        console.log(e);
+        this.mediaToken = "";
+      })
     },
-    render($state) {
+    createPlayer(){
+      this.player = new aplayer({
+      container: document.getElementById('static-aplayer'),
+      mini: false,
+      autoplay: false,
+      loop: 'all',
+      theme: '#e50914',
+      preload: 'auto',
+      volume: 0.7,
+      mutex: true,
+      audio: [{
+          name: this.audioname.split('.').slice(0,-1).join('.'),
+          url: this.apiurl,
+          cover: this.poster,
+          }]
+      });
+    },
+    getAudioUrl() {
+      this.audioname = this.url.split('/').pop();
+      this.audiourl = window.location.origin + encodeURI(this.url);
+      this.apiurl = this.audiourl+"?player=internal"+"&email="+this.user.email+"&token="+this.token.token;
+      this.externalUrl = this.audiourl+"?player=external"+"&email="+this.user.email+"&token="+this.mediaToken;
+      this.downloadUrl = this.audiourl+"?player=download"+"&email="+this.user.email+"&token="+this.mediaToken;
+    },
+    checkMobile() {
+      var width = this.windowWidth > 0 ? this.windowWidth : this.screenWidth;
+      if(width > 966){
+        this.ismobile = false
+      } else {
+        this.ismobile = true
+      }
+    },
+    getFiles($state) {
       this.metatitle = "Loading...";
       var path = this.url.split(this.url.split('/').pop())[0];
       var password = localStorage.getItem("password" + path);
@@ -205,19 +257,14 @@ export default {
             if ($state) {
               this.originalFiles.push(...this.buildFiles(data.files));
               this.files.push(this.getFilteredFiles(...this.buildFiles(data.files)));
-              this.playlist.push(this.getFilteredFiles(...this.buildFiles(data.files), true));
+              this.rawAudios.push(...this.getFilteredFiles(...this.buildFiles(data.files), true));
               this.addAudios();
             } else {
               this.originalFiles = this.buildFiles(data.files);
               this.files = this.getFilteredFiles(this.buildFiles(data.files));
-              this.playlist = this.getFilteredFiles(this.buildFiles(data.files), true);
+              this.rawAudios = this.getFilteredFiles(this.buildFiles(data.files), true);
               this.addAudios();
             }
-          }
-          if (body.nextPageToken) {
-            this.$refs.infinite.stateChanger.loaded();
-          } else {
-            this.$refs.infinite.stateChanger.complete();
           }
           this.loading = false;
         })
@@ -225,6 +272,26 @@ export default {
           console.log(e);
           this.loading = false;
         });
+    },
+    addAudios() {
+      if(this.files.length > 0){
+        this.files.forEach((item) => {
+          this.player.list.add({
+            name: item.name.split('.').slice(0,-1).join('.'),
+            cover: this.poster,
+            url: window.location.origin + encodeURI(item.path)+"?player=internal"+"&email="+this.user.email+"&token="+this.token.token,
+          })
+        });
+      }
+      if(this.rawAudios.length > 0){
+        this.rawAudios.forEach((item) => {
+          this.playlist.push({
+            name: item.name.split('.').slice(0,-1).join('.'),
+            cover: this.poster,
+            url: window.location.origin + encodeURI(item.path)+"?player=internal"+"&email="+this.user.email+"&token="+this.token.token,
+          })
+        });
+      }
     },
     buildFiles(files) {
       this.metatitle = decodeURIComponent(this.url.split('/').pop().split('.').slice(0,-1).join('.'));
@@ -255,69 +322,21 @@ export default {
         this.$router.go(-1);
       }
     },
-    checkMobile() {
-      var width = this.windowWidth > 0 ? this.windowWidth : this.screenWidth;
-      if(width > 966){
-        this.ismobile = false
-      } else {
-        this.ismobile = true
-      }
-    },
-    downloadButton() {
-      location.href = this.downloadUrl;
-    },
-    async getAudioUrl() {
-      // Easy to debug in development environment
-      this.audiourl = window.location.origin + encodeURI(this.url);
-      this.apiurl = await this.audiourl+"?player=internal"+"&email="+this.user.email+"&token="+this.token.token;
-      this.externalUrl = this.audiourl+"?player=external"+"&email="+this.user.email+"&token="+this.mediaToken;
-      this.downloadUrl = this.audiourl+"?player=download"+"&email="+this.user.email+"&token="+this.mediaToken;
-      this.audioname = this.url.split('/').pop();
-      this.player = new aplayer({
-      container: document.getElementById('static-aplayer'),
-      mini: false,
-      autoplay: false,
-      loop: 'all',
-      theme: '#e50914',
-      preload: 'auto',
-      volume: 0.7,
-      mutex: true,
-      audio: [{
-          name: this.audioname.split('.').slice(0,-1).join('.'),
-          url: this.apiurl,
-          cover: this.poster,
-          }]
-      });
+    async initializePage() {
+      this.mainload = true;
+      this.poster = window.themeOptions.audio.default_poster;
+      await this.initializeUser();
+      await this.getAudioUrl();
+      console.log(this.apiurl);
+      await this.createPlayer();
+      await this.checkMobile();
+      await this.getFiles();
+      this.player.play();
       this.mainLoad = false;
     },
-    action(file, target) {
-      let path = file.path;
-      if (target === "down" || (!checkExtends(path) && !file.isFolder)) {
-        location.href = path.replace(/^\/(\d+:)\//, "/$1down/");
-        return;
-      }
-    },
-    addAudios() {
-      if(this.files.length > 0){
-        this.files.forEach((item) => {
-          this.player.list.add({
-            name: item.name.split('.').slice(0,-1).join('.'),
-            cover: this.poster,
-            url: window.location.origin + encodeURI(item.path)+"?player=internal"+"&email="+this.user.email+"&token="+this.token.token,
-          })
-        });
-      }
-      if(this.playlist.length > 0){
-        let filteredTracks = [];
-        this.playlist.forEach((item) => {
-          filteredTracks.push({
-            name: item.name.split('.').slice(0,-1).join('.'),
-            cover: this.poster,
-            url: window.location.origin + encodeURI(item.path)+"?player=internal"+"&email="+this.user.email+"&token="+this.token.token,
-          })
-        });
-        this.playlist = filteredTracks;
-      }
+    downloadButton() {
+      this.$ga.event({eventCategory: "Audio Download",eventAction: "Download - "+this.siteName,eventLabel: "Audio Page",nonInteraction: true})
+      location.href = this.downloadUrl;
     },
     getFilteredFiles(rawFiles, nofill) {
       const audioRegex = /(audio)\/(.+)/
@@ -337,12 +356,14 @@ export default {
       if(this.$audio.player() == undefined) this.$audio.createPlayer();
       this.$audio.player().list.add(this.playlist);
       this.miniplayer = true;
+      this.$audio.player().play();
       this.$bus.$emit("music-toggled", "Music Toggled")
     },
     toggleModes(){
       if(this.$audio.player() == undefined){
         this.$audio.createPlayer()
         this.$audio.player().list.add(this.playlist);
+        this.$audio.player().play();
         this.miniplayer = true;
       } else {
         this.miniplayer = false;
@@ -367,30 +388,20 @@ export default {
     players() {
       return [
         {
-          name: "IINA",
-          icon: this.$cdnpath("images/player/iina.png"),
-          scheme: "iina://weblink?url=" + this.externalUrl,
-        },
-        {
-          name: "PotPlayer",
-          icon: this.$cdnpath("images/player/potplayer.png"),
-          scheme: "potplayer://" + this.externalUrl,
-        },
-        {
-          name: "VLC",
-          icon: this.$cdnpath("images/player/vlc.png"),
-          scheme: "vlc://" + this.externalUrl,
-        },
-        {
           name: "Cast To TV",
           icon: this.$cdnpath("images/player/cast.png"),
           scheme:
             "intent:" +
             this.externalUrl +
-            "#Intent;package=com.instantbits.cast.webvideo;S.title=" +
+            "#Intent;package=com.instantbits.cast.webvideo;title=" +
             this.title +
             ";end",
           
+        },
+        {
+          name: "VLC",
+          icon: this.$cdnpath("images/player/vlc.png"),
+          scheme: "vlc://" + this.externalUrl,
         },
         {
           name: "Thunder",
@@ -433,48 +444,18 @@ export default {
       return Buffer.from("AA" + this.externalUrl + "ZZ").toString("base64");
     },
   },
-  async beforeMount() {
-    this.mainload = true;
-    var userData = await initializeUser();
-    if(userData.isThere){
-      if(userData.type == "hybrid"){
-        this.user = userData.data.user;
-        this.logged = userData.data.logged;
-      } else if(userData.type == "normal"){
-        this.user = userData.data.user;
-        this.token = userData.data.token;
-        this.logged = userData.data.logged;
-      }
-    } else {
-      this.logged = userData.data.logged;
-    }
-    await this.$http.post(window.apiRoutes.mediaTokenTransmitter, {
-      email: userData.data.user.email,
-      token: userData.data.token.token,
-    }).then(response => {
-      if(response.data.auth && response.data.registered && response.data.token){
-        this.mainLoad = false;
-        this.mediaToken = response.data.token;
-        this.getAudioUrl();
-      } else {
-        this.mainLoad = false;
-        this.mediaToken = "";
-      }
-    }).catch(e => {
-      console.log(e);
-      this.mainLoad = false;
-      this.mediaToken = "";
-    })
-  },
   mounted() {
-    this.poster = window.themeOptions.audio.default_poster;
-    this.checkMobile();
-    this.render();
+    this.initializePage();
   },
   created() {
     let gddata = getgds(this.$route.params.id);
     this.gds = gddata.gds;
     this.currgd = gddata.current;
+    this.$ga.page({
+      page: "/Audio/"+this.url.split('/').pop()+"/",
+      title: decodeURIComponent(this.url.split('/').pop().split('.').slice(0,-1).join('.'))+" - "+this.siteName,
+      location: window.location.href
+    });
   },
   watch: {
     screenWidth: function() {
@@ -499,11 +480,13 @@ export default {
         this.playtext = "Loading Awesomeness..";
       })
       this.player.on('play', () => {
+        this.$ga.event({eventCategory: this.audioname,eventAction: "Started Playing"+" - "+this.siteName,eventLabel: "Audio Page"})
         this.metatitle = "Playing"+"-"+decodeURIComponent(this.url.split('/').pop().split('.').slice(0,-1).join('.'));
         this.playicon="fas fa-spin fa-compact-disc";
         this.playtext="Playing"
       });
       this.player.on('pause', () => {
+        this.$ga.event({eventCategory: this.audioname,eventAction: "Paused"+" - "+this.siteName,eventLabel: "Audio Page"})
         this.metatitle = "Paused"+"-"+decodeURIComponent(this.url.split('/').pop().split('.').slice(0,-1).join('.'));
         this.playicon="fas fa-pause",
         this.playtext="Paused"

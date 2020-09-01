@@ -23,7 +23,7 @@
       roots: [
         {
           id: "",
-          name: "Happy 4 Geeks",
+          name: "Glory to Heaven",
           pass: "",
         },
         {
@@ -57,9 +57,9 @@
       },
       render: {
         head_md: true,
-        head_md_link: `https://cdn.jsdelivr.net/gh/souvikmondal97/happy4geeks@v6.1.1/vuejs/dist/HEAD.md`,
+        head_md_link: `https://cdn.jsdelivr.net/gh/souvikmondal97/happy4geeks@v7.1.2/vuejs/dist/HEAD.md`,
         readme_md: true,
-        readme_md_link: "https://cdn.jsdelivr.net/gh/souvikmondal97/happy4geeks@v6.1.1/vuejs/dist/README.md",
+        readme_md_link: "https://cdn.jsdelivr.net/gh/souvikmondal97/happy4geeks@v7.1.2/vuejs/dist/README.md",
         desc: true,
       }
     }
@@ -274,6 +274,7 @@
     window.gds = JSON.parse(
       JSON.stringify(authConfig.roots.map((it) => it.name))
     );
+    window.version = authConfig.version
     window.gdHybridPass = authConfig.hybridpass;
     window.current_drive_order = 0;
   </script>
