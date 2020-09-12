@@ -111,7 +111,7 @@ module.exports = {
     publicPath,
     proxy: {
       "/api": {
-        target: "https://glorytoheaven.tk/",
+        target: "https://www.happy4geeks.ml/",
         ws: true,
         changeOrigin: true,
         pathRewrite: {
