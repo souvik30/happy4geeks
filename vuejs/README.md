@@ -1,6 +1,6 @@
 Media Website To Play Videos Of course and many more
 
-link- ![a link](happy4geeks.ml)
+link- [Click Here To Go To Website](happy4geeks.ml)
 
 Contact Me to get access to the website
 
